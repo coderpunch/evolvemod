@@ -1,0 +1,8 @@
+"AddonInfo"
+{
+	"name"		"Evolve"
+	"version"		"1.0"
+	"author_name"	"Overv, edgarasf123"
+	"author_url"	"https://github.com/edgarasf123/evolvemod"
+	"info"		"An easy to use server administration mod."
+}
