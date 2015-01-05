@@ -50,8 +50,8 @@ function MENU:Initialize()
 	self.TabContainer:SetPos( 0, 0 )
 	self.TabContainer:SetSize( self.Panel:GetSize() )
 	
-	for _, file in ipairs( file.FindInLua( "ev_menu/tab_*.lua" ) ) do
-		include( "ev_menu/" .. file )
+	for _, file in ipairs( file.Find( "evolve/menu/tab_*.lua", "LUA" ) ) do
+		include( "evolve/menu/" .. file )
 	end
 	
 	self.Panel:MakePopup()

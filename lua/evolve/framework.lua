@@ -1,10 +1,10 @@
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Framework providing the main Evolve functions
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Comfortable constants
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 evolve.constants = {}
 evolve.colors = {}
@@ -26,10 +26,30 @@ evolve.category.punishment = 3
 evolve.category.teleportation = 4
 evolve.plugins = {}
 evolve.version = 179
+local _R = debug.getregistry()
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
+	Precashed messages
+-----------------------------------------------------------------------------------------------------------------------]]--
+
+if ( SERVER ) then
+	util.AddNetworkString( "EV_PluginFile" )
+	util.AddNetworkString( "EV_Notification" )
+	util.AddNetworkString( "EV_TimeSync" )
+	util.AddNetworkString( "EV_RemoveBanEntry" )
+	util.AddNetworkString( "EV_RenameRank" )
+	util.AddNetworkString( "EV_RankPrivilegeAll" )
+	util.AddNetworkString( "EV_RemoveRank" )
+	util.AddNetworkString( "EV_RankPrivilege" )
+	util.AddNetworkString( "EV_Privilege" )
+	util.AddNetworkString( "EV_Rank" )
+	util.AddNetworkString( "EV_RankPrivileges" )
+	util.AddNetworkString( "EV_Init" )
+end
+
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Messages and notifications
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:Message( msg )
 	print( "[EV] " .. msg )
@@ -40,78 +60,69 @@ if ( SERVER ) then
 	
 	function evolve:Notify( ... )
 		local ply
-		local arg = { ... }
+		local args = { ... }
 		
-		if ( type( arg[1] ) == "Player" or arg[1] == NULL ) then ply = arg[1] end
-		if ( arg[1] == evolve.admins ) then
+		if ( type( args[1] ) == "Player" or args[1] == NULL or type( args[1] ) == "number" ) then ply = table.remove( args, 1 ) end
+		
+		if ( ply == evolve.admins ) then
 			for _, pl in ipairs( player.GetAll() ) do
 				if ( pl:IsAdmin() ) then
-					table.remove( arg, 1 )
-					evolve:Notify( pl, unpack( arg ) )
+					evolve:Notify( pl, unpack( args ) )
 				end
 			end
 			return
 		end
 		
-		if ( ply != NULL and !self.SilentNotify ) then
-			umsg.Start( "EV_Notification", ply )
-				umsg.Short( #arg )
-				for _, v in ipairs( arg ) do
-					if ( type( v ) == "string" ) then
-						umsg.String( v )
-					elseif ( type ( v ) == "table" ) then
-						umsg.Short( v.r )
-						umsg.Short( v.g )
-						umsg.Short( v.b )
-						umsg.Short( v.a )
-					end
-				end
-			umsg.End()
+		if ( type( ply ) == "Player" and !self.SilentNotify ) then
+			net.Start( "EV_Notification" )
+				net.WriteTable(args)
+			net.Send( ply )
 		end
 		
 		local str = ""
-		for _, v in ipairs( arg ) do
+		for _, v in ipairs( args ) do
 			if ( type( v ) == "string" ) then str = str .. v end
 		end
 		
 		if ( ply ) then
-			print( "[EV] " .. ply:Nick() .. " -> " .. str )
+			evolve:Message(ply:Nick() .. " -> " .. str )
 			evolve:Log( evolve:PlayerLogStr( ply ) .. " -> " .. str )
 		else
-			print( "[EV] " .. str )
+			evolve:Message( str )
 			evolve:Log( str )
 		end
 	end
 else
 	function evolve:Notify( ... )
-		local arg = { ... }
+		local args = { ... }
 		
-		args = {}
-		for _, v in ipairs( arg ) do
-			if ( type( v ) == "string" or type( v ) == "table" ) then table.insert( args, v ) end
+		text = {}
+		for _, v in ipairs( args ) do
+			if ( type( v ) == "string" or type( v ) == "table" ) then table.insert( text, v ) end
 		end
 		
 		chat.AddText( unpack( args ) )
 	end
-	
-	usermessage.Hook( "EV_Notification", function( um )
-		local argc = um:ReadShort()
-		local args = {}
-		for i = 1, argc / 2, 1 do
-			table.insert( args, Color( um:ReadShort(), um:ReadShort(), um:ReadShort(), um:ReadShort() ) )
-			table.insert( args, um:ReadString() )
-		end
-		
-		chat.AddText( unpack( args ) )
+	net.Receive( "EV_Notification", function( len )
+		chat.AddText( unpack( net.ReadTable() ) )
 	end )
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Utility functions
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:BoolToInt( bool )
 	if ( bool ) then return 1 else return 0 end
+end
+
+function evolve:GetPlayerBySteamID( steamid )
+	for _, v in pairs( player.GetAll() ) do
+		if ( v:SteamID() == steamid ) then
+			return v
+		end
+	end
+	return nil
 end
 
 function evolve:KeyByValue( tbl, value, iterator )
@@ -139,25 +150,25 @@ function evolve:FormatTime( t )
 	end
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Plugin management
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 local pluginFile
 
 function evolve:LoadPlugins()	
 	evolve.plugins = {}
 	
-	local plugins = file.FindInLua( "ev_plugins/*.lua" )
+	local plugins = file.Find( "evolve/plugins/*.lua", "LUA" )
 	for _, plugin in ipairs( plugins ) do
 		local prefix = string.Left( plugin, string.find( plugin, "_" ) - 1 )
 		pluginFile = plugin
 		
 		if ( CLIENT and ( prefix == "sh" or prefix == "cl" ) ) then
-			include( "ev_plugins/" .. plugin )
+			include( "evolve/plugins/" .. plugin )
 		elseif ( SERVER ) then
-			include( "ev_plugins/" .. plugin )
-			if ( prefix == "sh" or prefix == "cl" ) then AddCSLuaFile( "ev_plugins/" .. plugin ) end
+			include( "evolve/plugins/" .. plugin )
+			if ( prefix == "sh" or prefix == "cl" ) then AddCSLuaFile( "evolve/plugins/" .. plugin ) end
 		end
 	end
 end
@@ -234,10 +245,13 @@ if ( SERVER ) then
 				local title = evolve.plugins[found].Title
 				local prefix = string.Left( plugin, string.find( plugin, "_" ) - 1 )
 				
-				if ( prefix != "cl" ) then table.remove( evolve.plugins, found ) pluginFile = plugin include( "ev_plugins/" .. plugin ) end
+				if ( prefix != "cl" ) then table.remove( evolve.plugins, found ) pluginFile = plugin include( "evolve/plugins/" .. plugin ) end
 				
 				if ( prefix == "sh" or prefix == "cl" ) then
-					datastream.StreamToClients( player.GetAll(), "EV_PluginFile", { Title = title, Contents = file.Read( "../lua/ev_plugins/" .. plugin ) } )
+					net.Start("EV_PluginFile")
+						net.WriteString( title )
+						net.WriteString( file.Read( "evolve/plugins/" .. plugin, "LUA" ) )
+					net.Broadcast()
 				end
 			else
 				print( "[EV] Plugin '" .. tostring( args[1] ) .. "' not found!" )
@@ -245,21 +259,22 @@ if ( SERVER ) then
 		end
 	end )
 else
-	datastream.Hook( "EV_PluginFile", function( handler, id, encoded, decoded )
+	net.Receive( "EV_PluginFile", function( len )
+		local title = net.ReadString()
 		for k, plugin in ipairs( evolve.plugins ) do
-			if ( string.lower( plugin.Title ) == string.lower( decoded.Title ) ) then
+			if ( string.lower( plugin.Title ) == string.lower( title ) ) then
 				found = k
 				table.remove( evolve.plugins, k )
 			end
 		end
 		
-		RunString( decoded.Contents )
+		RunString( net.ReadString() )
 	end )
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Player collections
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:IsNameMatch( ply, str )
 	if ( str == "*" ) then
@@ -317,9 +332,9 @@ function evolve:CreatePlayerList( tbl, notall )
 	return lst
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Ranks
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function _R.Player:EV_IsRespected()
 	return self:EV_GetRank() == "respected" or self:EV_IsAdmin()
@@ -345,9 +360,9 @@ function _R.Player:EV_IsRank( rank )
 	return self:EV_GetRank() == rank
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Console
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function _R.Entity:Nick() if ( !self:IsValid() ) then return "Console" end end
 function _R.Entity:EV_IsRespected() if ( !self:IsValid() ) then return true end end
@@ -355,16 +370,16 @@ function _R.Entity:EV_IsAdmin() if ( !self:IsValid() ) then return true end end
 function _R.Entity:EV_IsSuperAdmin() if ( !self:IsValid() ) then return true end end
 function _R.Entity:EV_IsOwner() if ( !self:IsValid() ) then return true end end
 function _R.Entity:EV_GetRank() if ( !self:IsValid() ) then return "owner" end end
-function _R.Entity:UniqueID() if ( !self:IsValid() ) then return 0 end end
+function _R.Entity:SteamID() if ( !self:IsValid() ) then return 0 end end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Player information
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:LoadPlayerInfo()
-	if ( file.Exists( "ev_playerinfo.txt" ) ) then
+	if ( file.Exists( "ev_playerinfo.txt", "DATA") ) then
 		debug.sethook()
-		self.PlayerInfo = glon.decode( file.Read( "ev_playerinfo.txt" ) )
+		self.PlayerInfo = util.JSONToTable( file.Read( "ev_playerinfo.txt", "DATA" ) )
 	else
 		self.PlayerInfo = {}
 	end
@@ -372,24 +387,24 @@ end
 evolve:LoadPlayerInfo()
 
 function evolve:SavePlayerInfo()
-	file.Write( "ev_playerinfo.txt", glon.encode( self.PlayerInfo ) )
+	file.Write( "ev_playerinfo.txt", util.TableToJSON( self.PlayerInfo ) )
 end
 
 function _R.Player:GetProperty( id, defaultvalue )	
-	if ( evolve.PlayerInfo[ self:UniqueID() ] ) then
-		return evolve.PlayerInfo[ self:UniqueID() ][ id ] or defaultvalue
+	if ( evolve.PlayerInfo[ self:SteamID() ] ) then
+		return evolve.PlayerInfo[ self:SteamID() ][ id ] or defaultvalue
 	else
 		return defaultvalue
 	end
 end
 
 function _R.Player:SetProperty( id, value )
-	if ( !evolve.PlayerInfo[ self:UniqueID() ] ) then evolve.PlayerInfo[ self:UniqueID() ] = {} end
+	if ( !evolve.PlayerInfo[ self:SteamID() ] ) then evolve.PlayerInfo[ self:SteamID() ] = {} end
 	
-	evolve.PlayerInfo[ self:UniqueID() ][ id ] = value
+	evolve.PlayerInfo[ self:SteamID() ][ id ] = value
 end
 
-function evolve:UniqueIDByProperty( property, value, exact )	
+function evolve:SteamIDByProperty( property, value, exact )	
 	for k, v in pairs( evolve.PlayerInfo ) do
 		if ( v[ property ] == value ) then
 			return k
@@ -399,27 +414,27 @@ function evolve:UniqueIDByProperty( property, value, exact )
 	end
 end
 
-function evolve:GetProperty( uniqueid, id, defaultvalue )
-	uniqueid = tostring( uniqueid )
+function evolve:GetProperty( steamid, id, defaultvalue )
+	steamid = tostring( steamid )
 	
-	if ( evolve.PlayerInfo[ uniqueid ] ) then
-		return evolve.PlayerInfo[ uniqueid ][ id ] or defaultvalue
+	if ( evolve.PlayerInfo[ steamid ] ) then
+		return evolve.PlayerInfo[ steamid ][ id ] or defaultvalue
 	else
 		return defaultvalue
 	end
 end
 
-function evolve:SetProperty( uniqueid, id, value )
-	uniqueid = tostring( uniqueid )
-	if ( !evolve.PlayerInfo[ uniqueid ] ) then evolve.PlayerInfo[ uniqueid ] = {} end
+function evolve:SetProperty( steamid, id, value )
+	steamid = tostring( steamid )
+	if ( !evolve.PlayerInfo[ steamid ] ) then evolve.PlayerInfo[ steamid ] = {} end
 	
-	evolve.PlayerInfo[ uniqueid ][ id ] = value
+	evolve.PlayerInfo[ steamid ][ id ] = value
 end
 
 function evolve:CommitProperties()
-	/*-------------------------------------------------------------------------------------------------------------------------
+	--[[-----------------------------------------------------------------------------------------------------------------------
 		Check if a cleanup would be convenient
-	-------------------------------------------------------------------------------------------------------------------------*/
+	-----------------------------------------------------------------------------------------------------------------------]]--
 	
 	local count = table.Count( evolve.PlayerInfo )
 	
@@ -445,26 +460,26 @@ function evolve:CommitProperties()
 	evolve:SavePlayerInfo()
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Entity ownership
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
-hook.Add( "PlayerSpawnedProp", "EV_SpawnHook", function( ply, model, ent ) ent.EV_Owner = ply:UniqueID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned prop '" .. model .. "'." ) end )
-hook.Add( "PlayerSpawnedSENT", "EV_SpawnHook", function( ply, ent ) ent.EV_Owner = ply:UniqueID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned scripted entity '" .. ent:GetClass() .. "'." ) end )
-hook.Add( "PlayerSpawnedNPC", "EV_SpawnHook", function( ply, ent ) ent.EV_Owner = ply:UniqueID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned npc '" .. ent:GetClass() .. "'." ) end )
-hook.Add( "PlayerSpawnedVehicle", "EV_SpawnHook", function( ply, ent ) ent.EV_Owner = ply:UniqueID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned vehicle '" .. ent:GetClass() .. "'." ) end )
-hook.Add( "PlayerSpawnedEffect", "EV_SpawnHook", function( ply, model, ent ) ent.EV_Owner = ply:UniqueID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned effect '" .. model .. "'." ) end )
-hook.Add( "PlayerSpawnedRagdoll", "EV_SpawnHook", function( ply, model, ent ) ent.EV_Owner = ply:UniqueID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned ragdoll '" .. model .. "'." ) end )
+hook.Add( "PlayerSpawnedProp", "EV_SpawnHook", function( ply, model, ent ) ent.EV_Owner = ply:SteamID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned prop '" .. model .. "'." ) end )
+hook.Add( "PlayerSpawnedSENT", "EV_SpawnHook", function( ply, ent ) ent.EV_Owner = ply:SteamID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned scripted entity '" .. ent:GetClass() .. "'." ) end )
+hook.Add( "PlayerSpawnedNPC", "EV_SpawnHook", function( ply, ent ) ent.EV_Owner = ply:SteamID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned npc '" .. ent:GetClass() .. "'." ) end )
+hook.Add( "PlayerSpawnedVehicle", "EV_SpawnHook", function( ply, ent ) ent.EV_Owner = ply:SteamID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned vehicle '" .. ent:GetClass() .. "'." ) end )
+hook.Add( "PlayerSpawnedEffect", "EV_SpawnHook", function( ply, model, ent ) ent.EV_Owner = ply:SteamID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned effect '" .. model .. "'." ) end )
+hook.Add( "PlayerSpawnedRagdoll", "EV_SpawnHook", function( ply, model, ent ) ent.EV_Owner = ply:SteamID() evolve:Log( evolve:PlayerLogStr( ply ) .. " spawned ragdoll '" .. model .. "'." ) end )
 
 evolve.AddCount = _R.Player.AddCount
 function _R.Player:AddCount( type, ent )
-	ent.EV_Owner = self:UniqueID()
+	ent.EV_Owner = self:SteamID()
 	return evolve.AddCount( self, type, ent )
 end
 
 evolve.CleanupAdd = cleanup.Add
 function cleanup.Add( ply, type, ent )
-	if ( ent ) then ent.EV_Owner = ply:UniqueID() end
+	if ( ent ) then ent.EV_Owner = ply:SteamID() end
 	return evolve.CleanupAdd( ply, type, ent )
 end
 
@@ -472,12 +487,12 @@ function _R.Entity:EV_GetOwner()
 	return self.EV_Owner
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Ranks
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 // COMPATIBILITY
-evolve.compatibilityRanks = glon.decode( file.Read( "ev_ranks.txt" ) )
+evolve.compatibilityRanks = util.JSONToTable( file.Read( "ev_ranks.txt", "DATA" ) or "" )
 // COMPATIBILITY
 
 function _R.Player:EV_HasPrivilege( priv )
@@ -607,16 +622,18 @@ hook.Add( "PlayerSpawn", "EV_RankHook", function( ply )
 		
 		ply:SetNWInt( "EV_JoinTime", os.time() )
 		ply:SetNWInt( "EV_PlayTime", ply:GetProperty( "PlayTime" ) or 0 )
-		SendUserMessage( "EV_TimeSync", ply, os.time() )
+		net.Start( "EV_TimeSync" )
+			net.WriteInt( os.time(), 32 )
+		net.Send( ply )
 	end
 end )
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Time synchronisation
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
-usermessage.Hook( "EV_TimeSync", function( um )
-	evolve.timeoffset = um:ReadLong() - os.time()
+net.Receive( "EV_TimeSync", function( len )
+	evolve.timeoffset = net.ReadInt( 32 ) - os.time()
 end )
 
 function evolve:Time()
@@ -627,19 +644,19 @@ function evolve:Time()
 	end
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Rank management
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:SaveRanks()
-	file.Write( "ev_userranks.txt", glon.encode( evolve.ranks ) )
+	file.Write( "ev_userranks.txt", util.TableToJSON( evolve.ranks ) )
 end
 
 function evolve:LoadRanks()
-	if ( file.Exists( "ev_userranks.txt" ) ) then
-		evolve.ranks = glon.decode( file.Read( "ev_userranks.txt" ) )
+	if ( file.Exists( "ev_userranks.txt", "DATA" ) ) then
+		evolve.ranks = util.JSONToTable( file.Read( "ev_userranks.txt", "DATA" ) )
 	else
-		include( "ev_defaultranks.lua" )
+		include( "evolve/defaultranks.lua" )
 		evolve:SaveRanks()
 	end
 end
@@ -654,10 +671,10 @@ function evolve:TransferPrivileges( ply )
 	if ( !ply:IsValid() ) then return end
 	
 	for id, privilege in ipairs( evolve.privileges ) do
-		umsg.Start( "EV_Privilege", ply )
-			umsg.Short( id )
-			umsg.String( privilege )
-		umsg.End()
+		net.Start( "EV_Privilege" )
+			net.WriteInt( id, 8 )
+			net.WriteString( privilege )
+		net.Send( ply )
 	end
 end
 
@@ -666,39 +683,23 @@ function evolve:TransferRank( ply, rank )
 	
 	local data = evolve.ranks[ rank ]
 	local color = data.Color
-	
-	umsg.Start( "EV_Rank", ply )			
-		umsg.String( rank )
-		umsg.String( data.Title )
-		umsg.String( data.Icon )
-		umsg.String( data.UserGroup )
-		umsg.Short( data.Immunity )
+	net.Start( "EV_Rank" )
+		net.WriteString( rank )
+		net.WriteString( data.Title )
+		net.WriteString( data.Icon )
+		net.WriteString( data.UserGroup )
+		net.WriteTable( data.Privileges or {} )
+		net.WriteInt( data.Immunity, 8 )
 		
 		if ( color ) then
-			umsg.Bool( true )
-			umsg.Short( color.r )
-			umsg.Short( color.g )
-			umsg.Short( color.b )
+			net.WriteBit( true )
+			net.WriteInt( color.r, 8 )
+			net.WriteInt( color.g, 8 )
+			net.WriteInt( color.b, 8 )
 		else
-			umsg.Bool( false )
+			net.WriteBit( false )
 		end
-	umsg.End()
-	
-	local privs = #( data.Privileges or {} )
-	local count
-	
-	for i = 1, privs, 100 do
-		count = math.min( privs, i + 99 ) - i
-		
-		umsg.Start( "EV_RankPrivileges", ply )
-			umsg.String( rank )
-			umsg.Short( count + 1 )
-			
-			for ii = i, i + count do
-				umsg.Short( evolve:KeyByValue( evolve.privileges, data.Privileges[ii], ipairs ) )
-			end
-		umsg.End()
-	end
+	net.Send( ply )
 end
 
 function evolve:TransferRanks( ply )
@@ -707,21 +708,21 @@ function evolve:TransferRanks( ply )
 	end
 end
 
-usermessage.Hook( "EV_Rank", function( um )
-	local id = string.lower( um:ReadString() )
-	local title = um:ReadString()
+net.Receive( "EV_Rank", function( len )
+	local id = string.lower( net.ReadString() )
+	local title = net.ReadString()
 	local created = evolve.ranks[id] == nil
 	
 	evolve.ranks[id] = {
 		Title = title,
-		Icon = um:ReadString(),
-		UserGroup = um:ReadString(),
-		Immunity = um:ReadShort(),
-		Privileges = {},
+		Icon = net.ReadString(),
+		UserGroup = net.ReadString(),
+		Privileges = net.ReadTable(),
+		Immunity = net.ReadInt( 8 ),
 	}
 	
-	if ( um:ReadBool() ) then
-		evolve.ranks[id].Color = Color( um:ReadShort(), um:ReadShort(), um:ReadShort() )
+	if ( net.ReadBit() ) then
+		evolve.ranks[id].Color = Color( net.ReadInt( 8 ), net.ReadInt( 8 ), net.ReadInt( 8 ) )
 	end
 	
 	evolve.ranks[id].IconTexture = surface.GetTextureID( "gui/silkicons/" .. evolve.ranks[id].Icon )
@@ -733,39 +734,30 @@ usermessage.Hook( "EV_Rank", function( um )
 	end
 end )
 
-usermessage.Hook( "EV_Privilege", function( um )
-	local id = um:ReadShort()
-	local name = um:ReadString()
+net.Receive( "EV_Privilege", function( len )
+	local id = net.ReadInt( 8 )
+	local name = net.ReadString()
 	
 	evolve.privileges[ id ] = name
 end )
 
-usermessage.Hook( "EV_RankPrivileges", function( um )
-	local rank = um:ReadString()
-	local privilegeCount = um:ReadShort()
-	
-	for i = 1, privilegeCount do
-		table.insert( evolve.ranks[ rank ].Privileges, evolve.privileges[ um:ReadShort() ] )
-	end
-end )
-
-usermessage.Hook( "EV_RemoveRank", function( um )
-	local rank = um:ReadString()
+net.Receive( "EV_RemoveRank", function( len )
+	local rank = net.ReadString()
 	hook.Call( "EV_RankRemoved", nil, rank )
 	evolve.ranks[ rank ] = nil
 end )
 
-usermessage.Hook( "EV_RenameRank", function( um )
-	local rank = um:ReadString():lower()
-	evolve.ranks[ rank ].Title = um:ReadString()
+net.Receive( "EV_RenameRank", function( len )
+	local rank = net.ReadString():lower()
+	evolve.ranks[ rank ].Title = net.ReadString()
 	
 	hook.Call( "EV_RankRenamed", nil, rank, evolve.ranks[ rank ].Title )
 end )
 
-usermessage.Hook( "EV_RankPrivilege", function( um )
-	local rank = um:ReadString()
-	local priv = evolve.privileges[ um:ReadShort() ]
-	local enabled = um:ReadBool()
+net.Receive( "EV_RankPrivilege", function( len )
+	local rank = net.ReadString()
+	local priv = evolve.privileges[ net.ReadInt( 8 ) ]
+	local enabled = net.ReadBit()
 	
 	if ( enabled ) then
 		table.insert( evolve.ranks[ rank ].Privileges, priv )
@@ -776,10 +768,10 @@ usermessage.Hook( "EV_RankPrivilege", function( um )
 	hook.Call( "EV_RankPrivilegeChange", nil, rank, priv, enabled )
 end )
 
-usermessage.Hook( "EV_RankPrivilegeAll", function( um )
-	local rank = um:ReadString()
-	local enabled = um:ReadBool()
-	local filter = um:ReadString()
+net.Receive( "EV_RankPrivilegeAll", function( len )
+	local rank = net.ReadString()
+	local enabled = net.ReadBit()
+	local filter = net.ReadString()
 	
 	if ( enabled ) then
 		for _, priv in ipairs( evolve.privileges ) do
@@ -802,9 +794,9 @@ usermessage.Hook( "EV_RankPrivilegeAll", function( um )
 	end
 end )
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Rank modification
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 if ( SERVER ) then
 	concommand.Add( "ev_renamerank", function( ply, com, args )
@@ -815,10 +807,10 @@ if ( SERVER ) then
 				evolve.ranks[ args[1] ].Title = table.concat( args, " ", 2 )
 				evolve:SaveRanks()
 				
-				umsg.Start( "EV_RenameRank" )
-					umsg.String( args[1] )
-					umsg.String( evolve.ranks[ args[1] ].Title )
-				umsg.End()
+				net.Start( "EV_RenameRank" )
+					net.WriteString( args[1] )
+					net.WriteString( evolve.ranks[ args[1] ].Title )
+				net.Broadcast()
 			end
 		end
 	end )
@@ -841,11 +833,11 @@ if ( SERVER ) then
 				
 				evolve:SaveRanks()
 				
-				umsg.Start( "EV_RankPrivilege" )
-					umsg.String( rank )
-					umsg.Short( evolve:KeyByValue( evolve.privileges, privilege ) )
-					umsg.Bool( tonumber( args[3] ) == 1 )
-				umsg.End()
+				net.Start( "EV_RankPrivilege" )
+					net.WriteString( rank )
+					net.WriteInt( evolve:KeyByValue( evolve.privileges, privilege ), 8 )
+					net.WriteBit( tonumber( args[3] ) == 1 )
+				net.Broadcast()
 			elseif ( #args >= 2 and evolve.ranks[ args[1] ] and tonumber( args[2] ) and ( !args[3] or #args[3] == 1 ) ) then
 				local rank = args[1]
 				
@@ -869,27 +861,34 @@ if ( SERVER ) then
 				
 				evolve:SaveRanks()
 				
-				umsg.Start( "EV_RankPrivilegeAll" )
-					umsg.String( rank )
-					umsg.Bool( tonumber( args[2] ) == 1 )
-					umsg.String( args[3] or "" )
-				umsg.End()
+				net.Start( "EV_RankPrivilegeAll" )
+					net.WriteString( rank )
+					net.WriteBit( tonumber( args[2] ) == 1 )
+					net.WriteString( args[3] or "" )
+				net.Broadcast()
 			end
 		end
 	end )
 	
 	concommand.Add( "ev_setrankp", function( ply, com, args )
 		if ( ply:EV_HasPrivilege( "Rank modification" ) ) then
-			if ( #args == 6 and tonumber( args[2] ) and evolve.ranks[ args[1] ] and ( args[3] == "guest" or args[3] == "admin" or args[3] == "superadmin" ) and tonumber( args[4] ) and tonumber( args[5] ) and tonumber( args[6] ) ) then						
-				if ( args[1] != "owner" ) then
-					evolve.ranks[ args[1] ].Immunity = tonumber( args[2] )
-					evolve.ranks[ args[1] ].UserGroup = args[3]
-				end
-				
-				evolve.ranks[ args[1] ].Color = Color( args[4], args[5], args[6] )
-				evolve:SaveRanks()
-				
-				for _, pl in ipairs( player.GetAll() ) do
+			if ( #args == 6 and
+				evolve.ranks[ args[1] ] and -- Rank
+				tonumber( args[2] ) and  -- Immunity	
+				( args[3] == "guest" or args[3] == "admin" or args[3] == "superadmin" ) and -- Rank UserGroup
+				tonumber( args[4] ) and	-- Color.r
+				tonumber( args[5] ) and	-- Color.g
+				tonumber( args[6] ) 	-- Color.b
+				) then						
+					if ( args[1] != "owner" ) then
+						evolve.ranks[ args[1] ].Immunity = tonumber( args[2] )
+						evolve.ranks[ args[1] ].UserGroup = args[3]
+					end
+					
+					evolve.ranks[ args[1] ].Color = Color( args[4], args[5], args[6] )
+					evolve:SaveRanks()
+					
+					for _, pl in ipairs( player.GetAll() ) do
 						evolve:TransferRank( pl, args[1] )
 						
 						if ( args[1] != "owner" and pl:EV_GetRank() == args[1] ) then
@@ -914,9 +913,9 @@ if ( SERVER ) then
 					end
 				end
 				
-				umsg.Start( "EV_RemoveRank" )
-					umsg.String( args[1] )
-				umsg.End()
+				net.Start( "EV_RemoveRank" )
+					net.WriteString( args[1] )
+				net.Broadcast()
 			end
 		end
 	end )
@@ -953,128 +952,122 @@ if ( SERVER ) then
 	end )
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Banning
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 if ( SERVER ) then
 	function evolve:SyncBans( ply )
-		for uniqueid, info in pairs( evolve.PlayerInfo ) do
+		for steamid, info in pairs( evolve.PlayerInfo ) do
 			if ( info.BanEnd and ( info.BanEnd > os.time() or info.BanEnd == 0 ) ) then
-				local time = info.BanEnd - os.time()
-				if ( info.BanEnd == 0 ) then time = 0 end
-				SendUserMessage( "EV_BanEntry", ply, tostring( uniqueid ), info.Nick, info.SteamID, info.BanReason, evolve:GetProperty( info.BanAdmin, "Nick" ), time )
+				local t = info.BanEnd - os.time()
+				if ( info.BanEnd == 0 ) then t = 0 end
+				net.Start( "EV_BanEntry" )
+					net.WriteString( steamid )
+					net.WriteString( info.Nick )
+					net.WriteString( info.BanReason )
+					net.WriteString( evolve:GetProperty( info.BanAdmin, "Nick" ) )
+					net.WriteInt( t, 32 )
+				net.Send( ply )
 			end
 		end
 	end
 	
-	function evolve:Ban( uid, length, reason, adminuid )		
+	function evolve:Ban( sid, length, reason, adminsid )		
 		if ( length == 0 ) then length = -os.time() end
 		
-		evolve:SetProperty( uid, "BanEnd", os.time() + length )
-		evolve:SetProperty( uid, "BanReason", reason )
-		evolve:SetProperty( uid, "BanAdmin", adminuid )
+		evolve:SetProperty( sid, "BanEnd", os.time() + length )
+		evolve:SetProperty( sid, "BanReason", reason )
+		evolve:SetProperty( sid, "BanAdmin", adminsid )
 		evolve:CommitProperties()
 		
 		local a = "Console"
-		if ( adminuid != 0 ) then a = player.GetByUniqueID( adminuid ):Nick() end
-		SendUserMessage( "EV_BanEntry", nil, uid, evolve:GetProperty( uid, "Nick" ), evolve:GetProperty( uid, "SteamID" ), reason, a, length )
+		local admin = evolve:GetPlayerBySteamID( adminsid )
+		if ( IsValid( admin ) ) then a = admin:Nick() end
+		net.Start( "EV_BanEntry" )
+			net.WriteString( sid )
+			net.WriteString( evolve:GetProperty( sid, "Nick" ) )
+			net.WriteString( reason )
+			net.WriteString( a )
+			net.WriteInt( length, 32 )
+		net.Broadcast()
 		
-		-- Let SourceBans do the kicking or Evolve
-		if ( sourcebans ) then
-			local admin
-			if ( adminuid != 0 ) then admin = player.GetByUniqueID( adminuid ) end
-			
-			sourcebans.BanPlayerBySteamIDAndIP( evolve:GetProperty( uid, "SteamID" ), evolve:GetProperty( uid, "IPAddress" ) or "", math.max( 0, length ), reason, admin, evolve:GetProperty( uid, "Nick" ) )
-		else
-			local pl
-			if ( uid != 0 ) then pl = player.GetByUniqueID( uid ) end
-			
-			if ( pl ) then
-				game.ConsoleCommand( "banid " .. length / 60 .. " " .. pl:SteamID() .. "\n" )
-				
-				if ( length < 0 ) then
-					pl:Kick( "Permabanned! (" .. reason .. ")" )
-				else
-					pl:Kick( "Banned for " .. length / 60 .. " minutes! (" .. reason .. ")" )
-				end
+		local pl = evolve:GetPlayerBySteamID( sid )
+		if ( IsValid(pl) ) then
+			if ( length < 0 ) then
+				pl:Kick( "Permabanned! (" .. reason .. ")" )
 			else
-				game.ConsoleCommand( "addip " .. length / 60 .. " \"" .. string.match( evolve:GetProperty( uid, "IPAddress" ), "(%d+%.%d+%.%d+%.%d+)" ) .. "\"\n" )
+				pl:Kick( "Banned for " .. length / 60 .. " minutes! (" .. reason .. ")" )
 			end
 		end
-	end
-	
-	function evolve:UnBan( uid, adminuid )		
-		evolve:SetProperty( uid, "BanEnd", nil )
-		evolve:SetProperty( uid, "BanReason", nil )
-		evolve:SetProperty( uid, "BanAdmin", nil )
-		evolve:CommitProperties()
-		
-		SendUserMessage( "EV_RemoveBanEntry", nil, tostring( uid ) )
-		
-		if ( sourcebans ) then
-			local admin
-			if ( adminuid != 0 ) then admin = player.GetByUniqueID( adminuid ) end
+		game.ConsoleCommand( string.format( "banid %f %s kick\n", length / 60, sid ) )
+		game.ConsoleCommand( string.format( "kickid %s\n", sid ) )
 			
-			sourcebans.UnbanPlayerBySteamID( evolve:GetProperty( uid, "SteamID" ), "No reason specified.", admin )
-		else
-			game.ConsoleCommand( "removeip \"" .. ( evolve:GetProperty( uid, "IPAddress" ) or "" ) .. "\"\n" )
-			game.ConsoleCommand( "removeid " .. evolve:GetProperty( uid, "SteamID" ) .. "\n" )
-		end
+		game.ConsoleCommand( "writeid\n" )
 	end
 	
-	function evolve:IsBanned( uid )
-		local banEnd = evolve:GetProperty( uid, "BanEnd" )
+	function evolve:UnBan( sid, adminsid )		
+		evolve:SetProperty( sid, "BanEnd", nil )
+		evolve:SetProperty( sid, "BanReason", nil )
+		evolve:SetProperty( sid, "BanAdmin", nil )
+		evolve:CommitProperties()
+		net.Start("EV_RemoveBanEntry")
+			net.WriteString(sid)
+		net.Broadcast()
+		game.ConsoleCommand( "removeid " .. evolve:GetProperty( sid, "SteamID" ) .. "\n" )
+	end
+	
+	function evolve:IsBanned( sid )
+		local banEnd = evolve:GetProperty( sid, "BanEnd" )
 		
 		if ( banEnd and banEnd > 0 and os.time() > banEnd ) then
-			evolve:UnBan( uid )
+			evolve:UnBan( sid )
 			return false
 		end
 		
 		return banEnd and ( banEnd > os.time() or banEnd == 0 )
 	end
 else
-	usermessage.Hook( "EV_BanEntry", function( um )
+	net.Receive( "EV_BanEntry", function( len )
 		if ( !evolve.bans ) then evolve.bans = {} end
 		
-		local id = um:ReadString()
-		evolve.bans[id] =  {
-			Nick = um:ReadString(),
-			SteamID = um:ReadString(),
-			Reason = um:ReadString(),
-			Admin = um:ReadString()
+		local steamid = net.ReadString()
+		evolve.bans[steamid] =  {
+			Nick = net.ReadString(),
+			Reason = net.ReadString(),
+			Admin = net.ReadString()
 		}
 		
-		local time = um:ReadLong()
-		if ( time > 0 ) then
-			evolve.bans[id].End = time + os.time()
+		local t = net.ReadInt( 32 )
+		if ( t > 0 ) then
+			evolve.bans[steamid].End = t + os.time()
 		else
-			evolve.bans[id].End = 0
+			evolve.bans[steamid].End = 0
 		end
 		
-		hook.Call( "EV_BanAdded", nil, id )		
+		hook.Call( "EV_BanAdded", nil, steamid )		
 	end )
 	
-	usermessage.Hook( "EV_RemoveBanEntry", function( um )
+	net.Receive( "EV_RemoveBanEntry", function( len )
 		if ( !evolve.bans ) then return end
 		
-		local id = um:ReadString()
-		hook.Call( "EV_BanRemoved", nil, id )
-		evolve.bans[id] = nil
+		local steamid = net.ReadString()
+		hook.Call( "EV_BanRemoved", nil, steamid )
+		evolve.bans[steamid] = nil
 	end )
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Global data system
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:SaveGlobalVars()
-	file.Write( "ev_globalvars.txt", glon.encode( evolve.globalvars ) )
+	file.Write( "ev_globalvars.txt", util.TableToJSON( evolve.globalvars ) )
 end
 
 function evolve:LoadGlobalVars()
-	if ( file.Exists( "ev_globalvars.txt" ) ) then
-		evolve.globalvars = glon.decode( file.Read( "ev_globalvars.txt" ) )
+	if ( file.Exists( "ev_globalvars.txt", "DATA" ) ) then
+		evolve.globalvars = util.JSONToTable( file.Read( "ev_globalvars.txt", "DATA" ) )
 	else
 		evolve.globalvars = {}
 		evolve:SaveGlobalVars()
@@ -1091,15 +1084,15 @@ function evolve:GetGlobalVar( name, default )
 	return evolve.globalvars[name] or default
 end
 
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Log system
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:Log( str )
 	if ( CLIENT ) then return end
 	
 	local logFile = "ev_logs/" .. os.date( "%d-%m-%Y" ) .. ".txt"
-	local files = file.Find( "ev_logs/" .. os.date( "%d-%m-%Y" ) .. "*.txt" )
+	local files = file.Find( "ev_logs/" .. os.date( "%d-%m-%Y" ) .. "*.txt", "DATA" )
 	table.sort( files )
 	if ( #files > 0 ) then logFile = "ev_logs/" .. files[math.max(#files-1,1)] end
 	
@@ -1108,7 +1101,7 @@ function evolve:Log( str )
 		logFile = "ev_logs/" .. os.date( "%d-%m-%Y" ) .. " (" .. #files + 1 .. ").txt"
 	end
 	
-	filex.Append( logFile, "[" .. os.date() .. "] " .. str .. "\n" )
+	file.Append( logFile, "[" .. os.date() .. "] " .. str .. "\n" )
 end
 
 function evolve:PlayerLogStr( ply )

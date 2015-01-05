@@ -9,6 +9,7 @@ PLUGIN.Author = "Overv and Divran"
 PLUGIN.ChatCommand = "nolimits"
 PLUGIN.Usage = "[players] [1/0]"
 PLUGIN.Privileges = { "No limits", "Limits disabled" }
+local _R = debug.getregistry()
 
 function PLUGIN:Call( ply, args )
 	if ( ply:EV_HasPrivilege( "No limits" ) ) then
