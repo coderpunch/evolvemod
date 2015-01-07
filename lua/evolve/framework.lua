@@ -25,7 +25,11 @@ evolve.category.actions = 2
 evolve.category.punishment = 3
 evolve.category.teleportation = 4
 evolve.plugins = {}
+<<<<<<< HEAD:lua/evolve/framework.lua
 evolve.version = tonumber(file.Read("evolve/version.lua", "LUA") or 0) or 0
+=======
+evolve.version = 179
+>>>>>>> origin/master:lua/evolve/framework.lua
 local _R = debug.getregistry()
 
 --[[-----------------------------------------------------------------------------------------------------------------------
