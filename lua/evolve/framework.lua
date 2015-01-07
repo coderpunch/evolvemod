@@ -196,7 +196,7 @@ hook.Call = function( name, gm, ... )
 	for _, plugin in ipairs( evolve.plugins ) do
 		if ( plugin[ name ] ) then			
 			local retValues = { pcall( plugin[name], plugin, ... ) }
-			
+			--if (name != "Tick" and name != "Think" and name != "Move") then print(name) end
 			if ( retValues[1] and retValues[2] != nil ) then
 				table.remove( retValues, 1 )
 				return unpack( retValues )

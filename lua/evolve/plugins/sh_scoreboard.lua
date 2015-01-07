@@ -32,8 +32,54 @@ if ( CLIENT ) then
 	PLUGIN.TexPlaytime = surface.GetTextureID( "gui/scoreboard_playtime" )
 	
 	PLUGIN.Width = 687
-	
-	surface.CreateFont( "coolvetica", 22, 400, true, false, "EvolveScoreboardHeader" )
+	surface.CreateFont( "EvolveScoreboardHeader", {
+		font = "coolvetica", 
+		size = 22, 
+		weight = 400, 
+		blursize = 0, 
+		scanlines = 0, 
+		antialias = true, 
+		underline = false, 
+		italic = false, 
+		strikeout = false, 
+		symbol = false, 
+		rotary = false, 
+		shadow = false, 
+		additive = false, 
+		outline = false, 
+	} )
+	surface.CreateFont( "DefaultBold", {
+		font = "Default", 
+		size = 13, 
+		weight = 600, 
+		blursize = 0, 
+		scanlines = 0, 
+		antialias = true, 
+		underline = false, 
+		italic = false, 
+		strikeout = false, 
+		symbol = false, 
+		rotary = false, 
+		shadow = false, 
+		additive = false, 
+		outline = false, 
+	} )
+	surface.CreateFont( "ScoreboardText", {
+		font = "Default", 
+		size = 13, 
+		weight = 600, 
+		blursize = 0, 
+		scanlines = 0, 
+		antialias = true, 
+		underline = false, 
+		italic = false, 
+		strikeout = false, 
+		symbol = false, 
+		rotary = false, 
+		shadow = false, 
+		additive = false, 
+		outline = false, 
+	} )
 end
 
 function PLUGIN:ScoreboardShow()
@@ -112,7 +158,7 @@ function PLUGIN:DrawUsergroup( playerinfo, usergroup, title, icon, y )
 	
 	surface.SetDrawColor( 168, 206, 116, 255 )
 	surface.DrawRect( self.X + 0.5, y, self.Width - 2, 22 )
-	surface.SetTexture( icon )
+	surface.SetMaterial( icon )
 	surface.SetDrawColor( 255, 255, 255, 255 )
 	surface.DrawTexturedRect( self.X + 15, y + 4, 14, 14 )
 	draw.SimpleText( title, "DefaultBold", self.X + 40, y + 4, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
@@ -150,7 +196,7 @@ function PLUGIN:DrawPlayers()
 	
 	local sortedRanks = {}
 	for id, rank in pairs( evolve.ranks ) do
-		table.insert( sortedRanks, { ID = id, Title = rank.Title, Immunity = rank.Immunity, Icon = rank.IconTexture } )
+		table.insert( sortedRanks, { ID = id, Title = rank.Title, Immunity = rank.Immunity, Icon = rank.IconMaterial } )
 	end
 	table.SortByMember( sortedRanks, "Immunity" )
 	
