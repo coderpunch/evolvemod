@@ -17,9 +17,9 @@ function evolve:RegisterTab( tab )
 	tab.Panel.Paint = function() surface.SetDrawColor( 171, 171, 171, 255 ) surface.DrawRect( 0, 0, tab.Panel:GetWide(), tab.Panel:GetTall() ) end
 	
 	tab:Initialize( tab.Panel )
-	tab:Update()
+	if tab.Update then tab:Update() end
 	
-	MENU.TabContainer:AddSheet( tab.Title, tab.Panel, tab.Icon, false, false, tab.Description )
+	MENU.TabContainer:AddSheet( tab.Title, tab.Panel, "icon16/" .. tab.Icon .. ".png", false, false, tab.Description )
 	table.insert( MENU.Tabs, tab )
 end
 
@@ -32,7 +32,7 @@ function MENU:GetActiveTab()
 end
 
 function MENU:TabSelected( tab )
-	if ( tab ) then
+	if ( tab and tab.Update ) then
 		tab:Update()
 	end
 end
@@ -50,8 +50,9 @@ function MENU:Initialize()
 	self.TabContainer:SetPos( 0, 0 )
 	self.TabContainer:SetSize( self.Panel:GetSize() )
 	
-	for _, file in ipairs( file.FindInLua( "ev_menu/tab_*.lua" ) ) do
-		include( "ev_menu/" .. file )
+	local tabs,_ = file.Find("evolve/menu/tab_*.lua", "LUA")
+	for _, file in ipairs( tabs ) do
+		include( "evolve/menu/" .. file )
 	end
 	
 	self.Panel:MakePopup()
@@ -104,7 +105,7 @@ function MENU:Show()
 	if ( !self.Panel ) then MENU:Initialize() end
 	
 	for _, tab in ipairs( MENU.Tabs ) do
-		tab:Update()
+		if tab.Update then tab:Update() end
 	end
 	
 	self.Panel:SetVisible( true )

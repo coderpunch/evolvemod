@@ -5,7 +5,7 @@
 local TAB = {}
 TAB.Title = "Bans"
 TAB.Description = "Manage bans."
-TAB.Icon = "gui/silkicons/exclamation"
+TAB.Icon = "exclamation"
 TAB.Author = "Overv"
 TAB.Width = 520
 TAB.Privileges = { "Ban menu" }
@@ -22,7 +22,7 @@ function TAB:Initialize( pnl )
 	
 	self.ButUnban = vgui.Create( "EvolveButton", pnl )
 	self.ButUnban:SetSize( 80, 22 )
-	self.ButUnban:SetPos( self.Width - 80, pnl:GetParent():GetTall() - 53 )
+	self.ButUnban:SetPos( self.Width - 80, pnl:GetParent():GetTall() - 58 )
 	self.ButUnban:SetButtonText( "Unban" )
 	self.ButUnban:SetNotHighlightedColor( 50 )
 	self.ButUnban:SetHighlightedColor( 90 )
@@ -35,7 +35,7 @@ function TAB:Initialize( pnl )
 	
 	self.ButTime = vgui.Create( "EvolveButton", pnl )
 	self.ButTime:SetSize( 60, 22 )
-	self.ButTime:SetPos( self.Width - 145, pnl:GetParent():GetTall() - 53 )
+	self.ButTime:SetPos( self.Width - 145, pnl:GetParent():GetTall() - 58 )
 	self.ButTime:SetButtonText( "Time..." )
 	self.ButTime.DoClick = function()
 		if ( #self.BanList:GetLines() > 0 ) then
@@ -87,7 +87,7 @@ end
 function TAB:Update()
 	self.BanList:Clear()
 	for _, entry in pairs( evolve.bans ) do
-		if ( entry.End - os.time() > 0 or entry.End == 0 ) then
+		if ( entry.End or 0 - os.time() > 0 or entry.End == 0 ) then
 			local line = self.BanList:AddLine( entry.Nick, entry.SteamID, entry.Reason, evolve:FormatTime( entry.End - os.time() ), entry.Admin )
 			line.OnRightClick = lineRightClick
 		end

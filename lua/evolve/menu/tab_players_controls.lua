@@ -6,6 +6,14 @@ if ( CLIENT ) then
 
 PANEL = {}
 
+surface.CreateFont( "MenuItem", {
+	font = "Verdana",
+	size = 13,
+	weight = 0,
+	antialias = true,
+	additive = false
+})
+
 function PANEL:Init()
 	self:SetText( "" )
 end
@@ -49,42 +57,43 @@ derma.DefineControl( "EvolveButton", "Stylish menu button", PANEL, "DButton" )
 
 PANEL = {}
 
-local iconUser = surface.GetTextureID( "gui/silkicons/user" )
+surface.CreateFont( "EvolvePlayerListEntry", {
+	font = "coolvertica",
+	size = 12,
+	weight = 500,
+	antialias = true,
+	additive = false
+})
+
+local iconUser = Material( "icon16/user.png" )
 
 function PANEL:AddPlayer( ply )
-	local item = self:AddItem( "" )
+	local item = self:AddLine( "" )
 	
-	item:SetTall( 25 )
-		
 	item.Player = ply
 	
 	item.Avatar = vgui.Create( "AvatarImage", item )
 	item.Avatar:SetPlayer( ply )
-	item.Avatar:SetPos( 4, 4 )
+	item.Avatar:SetPos( 0, 0 )
 	item.Avatar:SetSize( 17, 17 )
 	
 	item.PaintOver = function()
-		if ( !ValidEntity( item.Player ) ) then
-			for i, it in pairs( self.SelectedItems ) do
-				if ( it == item ) then table.remove( self.SelectedItems, i ) break end
-			end
-			if ( #self.SelectedItems == 0 ) then self:SelectFirstItem() end
+		if ( !IsValid( item.Player ) ) then
+			if ( #self:GetSelected() == 0 ) then self:SelectFirstItem() end
 			
-			self:RemoveItem( item )
-			self:Rebuild()
-			
+			self:RemoveLine(item:GetID())
 			return
 		end
 		
 		if ( evolve.ranks[ ply:EV_GetRank() ] ) then
-			surface.SetTexture( evolve.ranks[ ply:EV_GetRank() ].IconTexture )
+			surface.SetMaterial( evolve.ranks[ ply:EV_GetRank() ].IconMaterial )
 		else
-			surface.SetTexture( iconUser )
+			surface.SetMaterial( iconUser )
 		end
 		surface.SetDrawColor( 255, 255, 255, 255 )
-		surface.DrawTexturedRect( item:GetWide() - 20, 4, 16, 16 )
+		surface.DrawTexturedRect( item:GetWide() - 20, 0, 16, 16 )
 		
-		draw.SimpleText( ply:Nick() or "", "Default", 28, 5, Color( 0, 0, 0, 255 ) )
+		draw.SimpleText( ply:Nick() or "", "EvolvePlayerListEntry", 28, 2, Color( 0, 0, 0, 255 ) )
 	end
 	
 	item.OnMousePressedOld = item.OnMousePressed
@@ -102,19 +111,19 @@ function PANEL:AddPlayer( ply )
 end
 
 function PANEL:SelectFirstItem()
-	self:SelectItem( self:GetItems()[1] )
+	self:SelectItem( self:GetLines()[1] )
 end
 
 function PANEL:GetSelectedPlayers()
 	local plys = {}
-	for _, item in pairs( self:GetSelectedItems() ) do if ( ValidEntity( item.Player ) ) then table.insert( plys, item.Player:Nick() ) end end
+	for _, item in pairs( self:GetSelected() ) do if ( IsValid( item.Player ) ) then table.insert( plys, item.Player:Nick() ) end end
 	return plys
 end
 
 function PANEL:Populate()
 	local selectedPlayers = {}
-	if ( #self:GetSelectedItems() > 0 ) then
-		for _, item in ipairs( self:GetSelectedItems() ) do
+	if ( #self:GetSelected() > 0 ) then
+		for _, item in ipairs( self:GetSelected() ) do
 			if ( IsValid( item.Player ) ) then table.insert( selectedPlayers, item.Player ) end
 		end
 	end
@@ -144,12 +153,12 @@ function PANEL:Populate()
 		end
 	end
 	
-	if ( #self:GetSelectedItems() == 0 ) then
+	if ( #self:GetSelected() == 0 ) then
 		self:SelectFirstItem()
 	end
 end
 
-derma.DefineControl( "EvolvePlayerList", "Stylish player list", PANEL, "DComboBox" )
+derma.DefineControl( "EvolvePlayerList", "Stylish player list", PANEL, "DListView" )
 
 /*-------------------------------------------------------------------------------------------------------------------------
 	Tool menu button
@@ -163,7 +172,7 @@ AccessorFunc( PANEL, "m_bSelected",     "Selected" )
 
 function PANEL:Init()
         self:SetContentAlignment( 4 )
-        self:SetTextInset( 5 )
+        self:SetTextInset( 5, 0 )
         self:SetTall( 15 )
         table.insert( ToolButtons, self )
 end

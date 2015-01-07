@@ -15,15 +15,19 @@ end
 function PLUGIN:PlayerInitialSpawn( ply )
 	if ( ply:EV_IsOwner() ) then
 		if ( !self.LatestVersion ) then
-			http.Get( "http://code.google.com/p/evolvemod/source/list", "", function( src )
-				self.LatestVersion = tonumber( src:match( "r([1-9]+)" ) )
-				self:PlayerInitialSpawn( ply )
-			end )
+			http.Fetch( "http://raw.githubusercontent.com/edgarasf123/evolvemod/master/lua/evolve/version.lua", 
+				function( body, len, headers, code )
+					self.LatestVersion = tonumber( body or 0 ) or 0
+					self:PlayerInitialSpawn( ply )
+				end, 
+				function( err )
+					self.LatestVersion = -1
+				end
+			);
 			return
 		end
-		
 		if ( evolve.version < self.LatestVersion ) then
-			evolve:Notify( ply, evolve.colors.red, "WARNING: Your Evolve SVN needs to be updated to revision " .. self.LatestVersion .. "!" )
+			evolve:Notify( ply, evolve.colors.red, "WARNING: Your Evolve needs to be updated to revision " .. self.LatestVersion .. "!" )
 		end
 	end
 end

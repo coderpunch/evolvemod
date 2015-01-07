@@ -14,19 +14,18 @@ function PLUGIN:Call( ply, args )
 	if ( #args <= 1 or ply:EV_HasPrivilege( "Ranking" ) ) then
 		local pl
 		if ( string.match( args[1] or "", "STEAM_[0-5]:[0-9]:[0-9]+" ) ) then
-			local uid = evolve:UniqueIDByProperty( "SteamID", args[1] )
-			if ( uid ) then
-				local p = player.GetByUniqueID( uid )
+			if ( sid ) then
+				local p = evolve:GetPlayerBySteamID( sid )
 				if ( p ) then
-					pl = { { UniqueID = p:UniqueID(), Nick = p:Nick(), Rank = p:EV_GetRank(), Ply = p } }
+					pl = { { SteamID = p:SteamID(), Nick = p:Nick(), Rank = p:EV_GetRank(), Ply = p } }
 				else
-					pl = { { UniqueID = uid, Nick = evolve:GetProperty( uid, "Nick" ), Rank = evolve:GetProperty( uid, "Rank" ) } }
+					pl = { { SteamID = sid, Nick = evolve:GetProperty( sid, "Nick" ), Rank = evolve:GetProperty( sid, "Rank" ) } }
 				end
 			end
 		else
 			pl = {}
 			for _, p in ipairs( evolve:FindPlayer( args[1], ply, false, true ) ) do
-				table.insert( pl, { UniqueID = p:UniqueID(), Nick = p:Nick(), Rank = p:EV_GetRank(), Ply = p } )
+				table.insert( pl, { SteamID = p:SteamID(), Nick = p:Nick(), Rank = p:EV_GetRank(), Ply = p } )
 			end
 		end
 		
@@ -47,8 +46,8 @@ function PLUGIN:Call( ply, args )
 									return
 								end
 							else
-								if ( tonumber( evolve.ranks[ ply:EV_GetRank() ].Immunity ) > tonumber( evolve.ranks[ evolve:GetProperty( pl.UniqueID, "Rank", "guest" ) ].Immunity ) ) then
-									evolve:SetProperty( pl.UniqueID, "Rank", args[2] )
+								if ( tonumber( evolve.ranks[ ply:EV_GetRank() ].Immunity ) > tonumber( evolve.ranks[ evolve:GetProperty( pl.SteamID, "Rank", "guest" ) ].Immunity ) ) then
+									evolve:SetProperty( pl.SteamID, "Rank", args[2] )
 									evolve:CommitProperties()
 								else
 									evolve:Notify( ply, evolve.colors.red, evolve.constants.noplayers2 )

@@ -83,8 +83,8 @@ function PLUGIN:Initialize()
 	local tools = {}
 	
 	if ( GAMEMODE.IsSandboxDerived ) then
-		for _, val in ipairs( file.FindInLua( "weapons/gmod_tool/stools/*.lua" )  ) do
-			local _, __, class = string.find( val, "([%w_]*)\.lua" )
+		for _, val in ipairs( file.Find( "weapons/gmod_tool/stools/*.lua", "LUA" )  ) do
+			local _, __, class = string.find( val, "([%w_]*)%.lua" )
 			table.insert( tools, "#" .. class )
 		end
 	end

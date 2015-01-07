@@ -27,5 +27,5 @@ Just bind a key to `+ev_menu`. Note that this will likely change in the future, 
 
 ## Credits
 
-* [Overv](https://code.google.com/p/evolvemod/)
-* [edgarasf123](https://github.com/edgarasf123)
+* [Overv](https://code.google.com/p/evolvemod/) (Original creator of Evolve)
+* [Xandaros](https://github.com/Xandaros) (Evolve Menu for GMod 13)
