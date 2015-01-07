@@ -8,10 +8,7 @@ evolve = {}
 if SERVER then
 	-- Distribute clientside and shared files
 	AddCSLuaFile( "autorun/ev_autorun.lua" )
-<<<<<<< HEAD
 	AddCSLuaFile( "evolve/version.lua" )
-=======
->>>>>>> origin/master
 	AddCSLuaFile( "evolve/framework.lua" )
 	AddCSLuaFile( "evolve/cl_init.lua" )
 	AddCSLuaFile( "evolve/menu/cl_menu.lua" )

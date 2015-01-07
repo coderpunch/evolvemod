@@ -50,12 +50,8 @@ function MENU:Initialize()
 	self.TabContainer:SetPos( 0, 0 )
 	self.TabContainer:SetSize( self.Panel:GetSize() )
 	
-<<<<<<< HEAD:lua/evolve/menu/cl_menu.lua
 	local tabs,_ = file.Find("evolve/menu/tab_*.lua", "LUA")
 	for _, file in ipairs( tabs ) do
-=======
-	for _, file in ipairs( file.Find( "evolve/menu/tab_*.lua", "LUA" ) ) do
->>>>>>> origin/master:lua/evolve/menu/cl_menu.lua
 		include( "evolve/menu/" .. file )
 	end
 	
