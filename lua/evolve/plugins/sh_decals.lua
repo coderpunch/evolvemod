@@ -15,6 +15,7 @@ function PLUGIN:Call( ply, args )
 		
 		for _, pl in ipairs( player.GetAll() ) do
 			pl:ConCommand( "r_cleardecals" )
+			pl:ConCommand( "r_cleardecals" )
 		end
 	else
 		evolve:Notify( ply, evolve.colors.red, evolve.constants.notallowed )

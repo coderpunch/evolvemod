@@ -62,7 +62,7 @@ if ( SERVER ) then
 		local ply
 		local args = { ... }
 		
-		if ( type( args[1] ) == "Player" or args[1] == NULL or type( args[1] ) == "number" ) then ply = table.remove( args, 1 ) end
+		if type( args[1] ) == "Player" or  type( args[1] ) == "number" or args[1] == NULL then ply = table.remove( args, 1 ) end
 		
 		if ( ply == evolve.admins ) then
 			for _, pl in ipairs( player.GetAll() ) do
@@ -73,10 +73,10 @@ if ( SERVER ) then
 			return
 		end
 		
-		if ( type( ply ) == "Player" and !self.SilentNotify ) then
+		if not self.SilentNotify then
 			net.Start( "EV_Notification" )
 				net.WriteTable(args)
-			net.Send( ply )
+			if IsValid( ply ) then net.Send( ply ) else net.Broadcast() end
 		end
 		
 		local str = ""
@@ -276,12 +276,14 @@ end
 	Player collections
 -----------------------------------------------------------------------------------------------------------------------]]--
 
-function evolve:IsNameMatch( ply, str )
+function evolve:IsNameMatch( ply, str, def )
 	if ( str == "*" ) then
 		return true
+	elseif ( str == "^" ) then
+		return ply == def
 	elseif ( str == "@" and ply:IsAdmin() ) then
 		return true
-	elseif ( str == "!@" and !ply:IsAdmin() ) then
+	elseif ( str == "!@" and not ply:IsAdmin() ) then
 		return true
 	elseif ( string.match( str, "STEAM_[0-5]:[0-9]:[0-9]+" ) ) then
 		return ply:SteamID() == str
@@ -306,7 +308,7 @@ function evolve:FindPlayer( name, def, nonum, noimmunity )
 		
 		for _, ply in ipairs( player.GetAll() ) do
 			for _, pm in ipairs( name2 ) do
-				if ( evolve:IsNameMatch( ply, pm ) and !table.HasValue( matches, ply ) and ( noimmunity or !def or def:EV_BetterThanOrEqual( ply ) ) ) then table.insert( matches, ply ) end
+				if ( evolve:IsNameMatch( ply, pm, def ) and not table.HasValue( matches, ply ) and ( noimmunity or not def or def:EV_BetterThanOrEqual( ply ) ) ) then table.insert( matches, ply ) end
 			end
 		end
 	end
@@ -402,16 +404,6 @@ function _R.Player:SetProperty( id, value )
 	if ( !evolve.PlayerInfo[ self:SteamID() ] ) then evolve.PlayerInfo[ self:SteamID() ] = {} end
 	
 	evolve.PlayerInfo[ self:SteamID() ][ id ] = value
-end
-
-function evolve:SteamIDByProperty( property, value, exact )	
-	for k, v in pairs( evolve.PlayerInfo ) do
-		if ( v[ property ] == value ) then
-			return k
-		elseif ( !exact and string.find( string.lower( v[ property ] or "" ), string.lower( value ) ) ) then
-			return k
-		end
-	end
 end
 
 function evolve:GetProperty( steamid, id, defaultvalue )

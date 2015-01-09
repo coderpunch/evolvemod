@@ -18,8 +18,10 @@ function PLUGIN:Call( ply, args )
 		for _, pl in ipairs( players ) do
 			if ( enabled ) then
 				pl:Lock()
+				pl.EV_Frozen = true
 			else
 				pl:UnLock()
+				pl.EV_Frozen = false
 			end
 		end
 		
@@ -37,6 +39,33 @@ function PLUGIN:Call( ply, args )
 	end
 end
 
+function PLUGIN:CanPlayerSuicide( ply )
+	if ( ply.EV_Frozen ) then return false end
+end
+function PLUGIN:PlayerNoClip( ply )
+	if ( ply.EV_Frozen ) then return false end
+end
+function PLUGIN:PlayerSpawnProp( ply )
+	if ( ply.EV_Frozen ) then return false end
+end
+function PLUGIN:PlayerSpawnSENT( ply )
+	if ( ply.EV_Frozen ) then return false end
+end
+function PLUGIN:PlayerSpawnSWEP( ply )
+	if ( ply.EV_Frozen ) then return false end
+end
+function PLUGIN:PlayerSpawnNPC( ply )
+	if ( ply.EV_Frozen ) then return false end
+end
+function PLUGIN:PlayerSpawnEffect( ply )
+	if ( ply.EV_Frozen ) then return false end
+end
+function PLUGIN:PlayerSpawnRagdoll( ply )
+	if ( ply.EV_Frozen ) then return false end
+end
+function PLUGIN:PlayerSpawnedVehicle( ply, veh )
+	if ( ply.EV_Frozen ) then veh:Remove() end
+end
 function PLUGIN:Menu( arg, players )
 	if ( arg ) then
 		table.insert( players, arg )

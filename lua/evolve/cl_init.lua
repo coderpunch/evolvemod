@@ -4,7 +4,7 @@
 
 -- Show startup message
 print( "\n=====================================================" )
-print( " Evolve " ..evolve.version .. " succesfully started clientside." )
+print( " Evolve succesfully started clientside." )
 print( "=====================================================\n" )
 
 net.Receive( "EV_Init", function( len )

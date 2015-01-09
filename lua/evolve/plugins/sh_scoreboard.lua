@@ -2,20 +2,14 @@
 	Default custom scoreboard
 -------------------------------------------------------------------------------------------------------------------------*/
 
-resource.AddFile( "materials/gui/scoreboard_header.vtf" )
-resource.AddFile( "materials/gui/scoreboard_header.vmt" )
-resource.AddFile( "materials/gui/scoreboard_middle.vtf" )
-resource.AddFile( "materials/gui/scoreboard_middle.vmt" )
-resource.AddFile( "materials/gui/scoreboard_bottom.vtf" )
-resource.AddFile( "materials/gui/scoreboard_bottom.vmt" )
-resource.AddFile( "materials/gui/scoreboard_ping.vtf" )
-resource.AddFile( "materials/gui/scoreboard_ping.vmt" )
-resource.AddFile( "materials/gui/scoreboard_frags.vtf" )
-resource.AddFile( "materials/gui/scoreboard_frags.vmt" )
-resource.AddFile( "materials/gui/scoreboard_skull.vtf" )
-resource.AddFile( "materials/gui/scoreboard_skull.vmt" )
-resource.AddFile( "materials/gui/scoreboard_playtime.vtf" )
-resource.AddFile( "materials/gui/scoreboard_playtime.vmt" )
+resource.AddFile( "materials/gui/scoreboard_header.png" )
+resource.AddFile( "materials/gui/scoreboard_middle.png" )
+resource.AddFile( "materials/gui/scoreboard_bottom.png" )
+
+resource.AddFile( "materials/gui/scoreboard_ping.png" )
+resource.AddFile( "materials/gui/scoreboard_frags.png" )
+resource.AddFile( "materials/gui/scoreboard_skull.png" )
+resource.AddFile( "materials/gui/scoreboard_playtime.png" )
 
 local PLUGIN = {}
 PLUGIN.Title = "Scoreboard"
@@ -23,68 +17,47 @@ PLUGIN.Description = "Default custom scoreboard."
 PLUGIN.Author = "Overv"
 
 if ( CLIENT ) then
-	PLUGIN.TexHeader = surface.GetTextureID( "gui/scoreboard_header" )
-	PLUGIN.TexMiddle = surface.GetTextureID( "gui/scoreboard_middle" )
-	PLUGIN.TexBottom = surface.GetTextureID( "gui/scoreboard_bottom" )
-	PLUGIN.TexPing = surface.GetTextureID( "gui/scoreboard_ping" )
-	PLUGIN.TexFrags = surface.GetTextureID( "gui/scoreboard_frags" )
-	PLUGIN.TexDeaths = surface.GetTextureID( "gui/scoreboard_skull" )
-	PLUGIN.TexPlaytime = surface.GetTextureID( "gui/scoreboard_playtime" )
+	PLUGIN.MatHeader = Material( "gui/scoreboard_header.png", "smooth" )
+	PLUGIN.MatMiddle = Material( "gui/scoreboard_middle.png", "smooth" )
+	PLUGIN.MatBottom = Material( "gui/scoreboard_bottom.png", "smooth" )
+	
+	PLUGIN.MatPing = Material( "gui/scoreboard_ping.png", "smooth" )
+	PLUGIN.MatFrags = Material( "gui/scoreboard_frags.png", "smooth" )
+	PLUGIN.MatDeaths = Material( "gui/scoreboard_skull.png", "smooth" )
+	PLUGIN.MatPlaytime = Material( "gui/scoreboard_playtime.png", "smooth" )
 	
 	PLUGIN.Width = 687
-	surface.CreateFont( "EvolveScoreboardHeader", {
-		font = "coolvetica", 
-		size = 22, 
-		weight = 400, 
-		blursize = 0, 
-		scanlines = 0, 
-		antialias = true, 
-		underline = false, 
-		italic = false, 
-		strikeout = false, 
-		symbol = false, 
-		rotary = false, 
-		shadow = false, 
-		additive = false, 
-		outline = false, 
+
+	surface.CreateFont( "EvolveScoreboardTitle", {
+		font	= "Helvetica",
+		size	= 25,
+		weight	= 800
 	} )
-	surface.CreateFont( "DefaultBold", {
-		font = "Default", 
-		size = 13, 
-		weight = 600, 
-		blursize = 0, 
-		scanlines = 0, 
-		antialias = true, 
-		underline = false, 
-		italic = false, 
-		strikeout = false, 
-		symbol = false, 
-		rotary = false, 
-		shadow = false, 
-		additive = false, 
-		outline = false, 
+	
+	surface.CreateFont( "EvolveInfoBarBold", {
+		font = "CloseCaption_Normal", 
+		weight = 600
 	} )
-	surface.CreateFont( "ScoreboardText", {
+	surface.CreateFont( "EvolveInfoBar", {
+		font = "CloseCaption_Normal", 
+		weight = 400
+	} )
+	surface.CreateFont( "EvolveScoreboardText", {
 		font = "Default", 
-		size = 13, 
 		weight = 600, 
-		blursize = 0, 
-		scanlines = 0, 
-		antialias = true, 
-		underline = false, 
-		italic = false, 
-		strikeout = false, 
-		symbol = false, 
-		rotary = false, 
-		shadow = false, 
-		additive = false, 
-		outline = false, 
+		size = 12
+	} )
+	surface.CreateFont( "EvolveScoreboardUser", {
+		font = "Default", 
+		weight = 500, 
+		size = 13
 	} )
 end
 
 function PLUGIN:ScoreboardShow()
 	if ( GAMEMODE.IsSandboxDerived and evolve.installed ) then
 		self.DrawScoreboard = true
+		gui.EnableScreenClicker( true )
 		return true
 	end
 end
@@ -92,6 +65,7 @@ end
 function PLUGIN:ScoreboardHide()
 	if ( self.DrawScoreboard ) then
 		self.DrawScoreboard = false
+		gui.EnableScreenClicker( false )
 		return true
 	end
 end
@@ -129,21 +103,21 @@ function PLUGIN:DrawInfoBar()
 	
 	// Content
 	local x = self.X + 24
-	draw.SimpleText( "Currently playing ", "Default", x, self.Y + 117, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	x = x + self:QuickTextSize( "Default", "Currently playing " )
-	draw.SimpleText( GAMEMODE.Name, "DefaultBold", x, self.Y + 117, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	x = x + self:QuickTextSize( "DefaultBold", GAMEMODE.Name )
-	draw.SimpleText( " on the map ", "Default", x, self.Y + 117, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	x = x + self:QuickTextSize( "Default", " on the map " )
-	draw.SimpleText( game.GetMap(), "DefaultBold", x, self.Y + 117, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	x = x + self:QuickTextSize( "DefaultBold", game.GetMap() )
-	draw.SimpleText( ", with ", "Default", x, self.Y + 117, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	x = x + self:QuickTextSize( "Default", ", with " )
-	draw.SimpleText( #player.GetAll(), "DefaultBold", x, self.Y + 117, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-	x = x + self:QuickTextSize( "DefaultBold", #player.GetAll() )
+	draw.SimpleText( "Currently playing ", "EvolveInfoBar", x, self.Y + 128, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+	x = x + self:QuickTextSize( "EvolveInfoBar", "Currently playing " )
+	draw.SimpleText( GAMEMODE.Name, "EvolveInfoBarBold", x, self.Y + 128, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+	x = x + self:QuickTextSize( "EvolveInfoBarBold", GAMEMODE.Name )
+	draw.SimpleText( " on the map ", "EvolveInfoBar", x, self.Y + 128, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+	x = x + self:QuickTextSize( "EvolveInfoBar", " on the map " )
+	draw.SimpleText( game.GetMap(), "EvolveInfoBarBold", x, self.Y + 128, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+	x = x + self:QuickTextSize( "EvolveInfoBarBold", game.GetMap() )
+	draw.SimpleText( ", with ", "EvolveInfoBar", x, self.Y + 128, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+	x = x + self:QuickTextSize( "EvolveInfoBar", ", with " )
+	draw.SimpleText( #player.GetAll(), "EvolveInfoBarBold", x, self.Y + 128, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+	x = x + self:QuickTextSize( "EvolveInfoBarBold", #player.GetAll() )
 	local s = ""
 	if ( #player.GetAll() > 1 ) then s = "s" end
-	draw.SimpleText( " player" .. s .. ".", "Default", x, self.Y + 117, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+	draw.SimpleText( " player" .. s .. ".", "EvolveInfoBar", x, self.Y + 128, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 end
 
 function PLUGIN:DrawUsergroup( playerinfo, usergroup, title, icon, y )
@@ -161,28 +135,32 @@ function PLUGIN:DrawUsergroup( playerinfo, usergroup, title, icon, y )
 	surface.SetMaterial( icon )
 	surface.SetDrawColor( 255, 255, 255, 255 )
 	surface.DrawTexturedRect( self.X + 15, y + 4, 14, 14 )
-	draw.SimpleText( title, "DefaultBold", self.X + 40, y + 4, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+	draw.SimpleText( title, "EvolveScoreboardText", self.X + 40, y + 15, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 	
-	self:DrawTexturedRect( self.TexPing, self.X + self.Width - 50, y + 4, 14, 14 )
-	self:DrawTexturedRect( self.TexDeaths, self.X + self.Width - 150.5, y + 4, 14, 14 )
-	self:DrawTexturedRect( self.TexFrags, self.X + self.Width - 190.5,  y + 4, 14, 14 )
-	self:DrawTexturedRect( self.TexPlaytime, self.X + self.Width - 100,  y + 4, 14, 14 )
+	surface.SetMaterial( self.MatPing )
+	surface.DrawTexturedRect( self.X + self.Width - 50, y + 4, 14, 14 )
+	surface.SetMaterial( self.MatDeaths )
+	surface.DrawTexturedRect( self.X + self.Width - 150.5, y + 4, 14, 14 )
+	surface.SetMaterial( self.MatFrags )
+	surface.DrawTexturedRect( self.X + self.Width - 190.5,  y + 4, 14, 14 )
+	surface.SetMaterial( self.MatPlaytime )
+	surface.DrawTexturedRect( self.X + self.Width - 100,  y + 4, 14, 14 )
 	
-	y = y + 26
+	y = y + 18
 	
 	for _, pl in ipairs( playerinfo ) do
 		if ( pl.Usergroup == usergroup ) then
-			draw.SimpleText( pl.Nick, "ScoreboardText", self.X + 40, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-			draw.SimpleText( pl.Frags, "ScoreboardText", self.X + self.Width - 187, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-			draw.SimpleText( pl.Deaths, "ScoreboardText", self.X + self.Width - 147, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-			draw.SimpleText( pl.Ping, "ScoreboardText", self.X + self.Width - 50, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
-			draw.SimpleText( self:FormatTime( pl.PlayTime ), "ScoreboardText", self.X + self.Width - 92, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-			
 			y = y + 20
+			draw.SimpleText( pl.Nick, "EvolveScoreboardUser", self.X + 40, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
+			draw.SimpleText( pl.Frags, "EvolveScoreboardUser", self.X + self.Width - 184, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+			draw.SimpleText( pl.Deaths, "EvolveScoreboardUser", self.X + self.Width - 144, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+			draw.SimpleText( pl.Ping, "EvolveScoreboardUser", self.X + self.Width - 50, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+			draw.SimpleText( self:FormatTime( pl.PlayTime ), "EvolveScoreboardUser", self.X + self.Width - 92, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+			
 		end
 	end
 	
-	return y + 10
+	return y + 15
 end
 
 function PLUGIN:DrawPlayers()
@@ -221,15 +199,15 @@ function PLUGIN:HUDDrawScoreBoard()
 	
 	surface.SetDrawColor( 255, 255, 255, 255 )
 	
-	surface.SetTexture( self.TexHeader )
+	surface.SetMaterial( self.MatHeader )
 	surface.DrawTexturedRect( self.X, self.Y, self.Width, 122 )
-	draw.SimpleText( GetHostName(), "EvolveScoreboardHeader", self.X + 133, self.Y + 51, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
-	draw.SimpleText( GetHostName(), "EvolveScoreboardHeader", self.X + 132, self.Y + 50, Color( 255, 255, 255, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+	draw.SimpleText( GetHostName(), "EvolveScoreboardTitle", self.X + 133, self.Y + 51, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+	draw.SimpleText( GetHostName(), "EvolveScoreboardTitle", self.X + 132, self.Y + 50, Color( 255, 255, 255, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
 	
 	surface.SetDrawColor( 255, 255, 255, 255 )
-	surface.SetTexture( self.TexMiddle )
+	surface.SetMaterial( self.MatMiddle )
 	surface.DrawTexturedRect( self.X, self.Y + 122, self.Width, self.Height - 122 - 37 )
-	surface.SetTexture( self.TexBottom )
+	surface.SetMaterial( self.MatBottom )
 	surface.DrawTexturedRect( self.X, self.Y + self.Height - 37, self.Width, 37 )
 	
 	self:DrawInfoBar()
@@ -238,5 +216,5 @@ function PLUGIN:HUDDrawScoreBoard()
 	
 	self.Height = y - self.Y
 end
-
+if IsValid( g_Scoreboard ) then g_Scoreboard:Remove() end
 evolve:RegisterPlugin( PLUGIN )

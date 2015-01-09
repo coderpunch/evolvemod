@@ -50,13 +50,12 @@ else
 	PLUGIN.iconAFK = surface.GetTextureID( "gui/silkicons/arrow_refresh" )
 
 	function PLUGIN:HUDPaint()
-		if ( !evolve.installed or !LocalPlayer():EV_HasPrivilege( "Player names" ) or ( GAMEMODE.IsSandboxDerived ) ) then return end
+		if ( not evolve.installed or not LocalPlayer():EV_HasPrivilege( "Player names" ) or ( not GAMEMODE.IsSandboxDerived ) ) then return end
 		
 		for _, pl in ipairs( player.GetAll() ) do
 			if ( pl != LocalPlayer() and pl:Health() > 0 ) then
 				local visible = hook.Call( "EV_ShowPlayerName", nil, pl )
-				
-				if ( visible != false ) then				
+				if ( visible != false ) then
 					local td = {}
 					td.start = LocalPlayer():GetShootPos()
 					td.endpos = pl:GetShootPos()
@@ -92,10 +91,8 @@ else
 							surface.SetTexture( self.iconChat )
 						elseif ( pl:GetNWBool( "EV_AFK", false ) ) then
 							surface.SetTexture( self.iconAFK )
-						elseif ( pl:SteamID() == "STEAM_0:1:11956651" ) then
-								surface.SetTexture( self.iconDeveloper )
 						elseif ( evolve.ranks[ pl:EV_GetRank() ] ) then
-							surface.SetTexture( evolve.ranks[ pl:EV_GetRank() ].IconTexture )
+							surface.SetMaterial( evolve.ranks[ pl:EV_GetRank() ].IconMaterial )
 						else
 							surface.SetTexture( self.iconUser )
 						end

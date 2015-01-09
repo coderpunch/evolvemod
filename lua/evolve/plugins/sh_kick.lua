@@ -12,7 +12,7 @@ PLUGIN.Privileges = { "Kick" }
 
 function PLUGIN:Call( ply, args )
 	if ( ply:EV_HasPrivilege( "Kick" ) ) then
-		local pl = evolve:FindPlayer( args[1] )
+		local pl = evolve:FindPlayer( args[1], ply )
 		
 		if ( #pl > 1 ) then
 			evolve:Notify( ply, evolve.colors.white, "Did you mean ", evolve.colors.red, evolve:CreatePlayerList( pl, true ), evolve.colors.white, "?" )
@@ -21,25 +21,16 @@ function PLUGIN:Call( ply, args )
 				local reason = table.concat( args, " ", 2 ) or ""
 				
 				for _, v in ipairs( ents.GetAll() ) do
-					if ( v:EV_GetOwner() == pl[1]:UniqueID() ) then v:Remove() end
+					if ( v:EV_GetOwner() == pl[1]:SteamID() ) then v:Remove() end
 				end
 				
 				if ( #reason == 0 || reason == "No reason" ) then
 					evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " has kicked ", evolve.colors.red, pl[1]:Nick(), evolve.colors.white, "." )
-					
-					if ( gatekeeper ) then
-						gatekeeper.Drop( pl[1]:UserID(), "Kicked without a reason." )
-					else
-						pl[1]:Kick( "No reason specified." )
-					end
+					gatekeeper.Drop( pl[1]:SteamID(), "Kicked without a reason." )
+					pl[1]:Kick( "No reason specified." )
 				else
 					evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " has kicked ", evolve.colors.red, pl[1]:Nick(), evolve.colors.white, " with the reason \"" .. reason .."\"." )
-					
-					if ( gatekeeper ) then
-						gatekeeper.Drop( pl[1]:UserID(), "Kicked: " .. reason )
-					else
-						pl[1]:Kick( reason )
-					end
+					pl[1]:Kick( reason )
 				end
 			else
 				evolve:Notify( ply, evolve.colors.red, evolve.constants.noplayers2 )

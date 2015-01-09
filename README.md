@@ -2,7 +2,7 @@ evolvemod
 =========
 ### Introduction
 
-As a start, I'd like to thank you for trying out my beta admin mod, Evolve. Installing will be a cakewalk if you follow these instructions. Just drop 'evolve' in your server's addons directory and continue reading.
+The original author ([Overv](https://code.google.com/p/evolvemod/)) has discontinued support of Evolve. I am currently continuing the development of this addon for GMod13. If you encounter any problems, please write an issue.
 
 ### How do I become owner?
 
@@ -27,5 +27,5 @@ Just bind a key to `+ev_menu`. Note that this will likely change in the future, 
 
 ## Credits
 
-* [Overv](https://code.google.com/p/evolvemod/) (Original creator of Evolve)
+* [Overv](https://code.google.com/p/evolvemod/) (Original author of Evolve)
 * [Xandaros](https://github.com/Xandaros) (Evolve Menu for GMod 13)
