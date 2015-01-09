@@ -1,6 +1,6 @@
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Kick a player
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 local PLUGIN = {}
 PLUGIN.Title = "Kick"
@@ -26,7 +26,6 @@ function PLUGIN:Call( ply, args )
 				
 				if ( #reason == 0 || reason == "No reason" ) then
 					evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " has kicked ", evolve.colors.red, pl[1]:Nick(), evolve.colors.white, "." )
-					gatekeeper.Drop( pl[1]:SteamID(), "Kicked without a reason." )
 					pl[1]:Kick( "No reason specified." )
 				else
 					evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " has kicked ", evolve.colors.red, pl[1]:Nick(), evolve.colors.white, " with the reason \"" .. reason .."\"." )

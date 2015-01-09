@@ -1,7 +1,7 @@
-/*-------------------------------------------------------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------------------------------------------------------
 	Ban a player
 		To do: Clean up this piece of shit.
--------------------------------------------------------------------------------------------------------------------------*/
+-----------------------------------------------------------------------------------------------------------------------]]--
 
 local PLUGIN = {}
 PLUGIN.Title = "Ban"
@@ -15,9 +15,9 @@ function PLUGIN:Call( ply, args )
 	local time = math.Clamp( tonumber( args[2] ) or 5, 0, 10080 )
 	
 	if ( ( time > 0 and ply:EV_HasPrivilege( "Ban" ) ) or ( time == 0 and ply:EV_HasPrivilege( "Permaban" ) ) ) then
-		/*-------------------------------------------------------------------------------------------------------------------------
+		--[[-----------------------------------------------------------------------------------------------------------------------
 			Get the Steam ID to ban
-		-------------------------------------------------------------------------------------------------------------------------*/
+		-----------------------------------------------------------------------------------------------------------------------]]--
 		
 		local sid, pl
 		
@@ -35,25 +35,25 @@ function PLUGIN:Call( ply, args )
 			end
 		end
 		
-		/*-------------------------------------------------------------------------------------------------------------------------
+		--[[-----------------------------------------------------------------------------------------------------------------------
 			Make sure the player exists and we're allowed to ban it
-		-------------------------------------------------------------------------------------------------------------------------*/
+		-----------------------------------------------------------------------------------------------------------------------]]--
 		
 		if ( !sid or ( tonumber( evolve.ranks[ ply:EV_GetRank() ].Immunity ) <= tonumber( evolve.ranks[ evolve:GetProperty( sid, "Rank", "guest" ) ].Immunity ) and ply != NULL ) ) then
 			evolve:Notify( ply, evolve.colors.red, evolve.constants.noplayers2 )
 			return
 		end
 		
-		/*-------------------------------------------------------------------------------------------------------------------------
+		--[[-----------------------------------------------------------------------------------------------------------------------
 			Gather data and perform ban
-		-------------------------------------------------------------------------------------------------------------------------*/
+		-----------------------------------------------------------------------------------------------------------------------]]--
 		
 		local length = math.Clamp( tonumber( args[2] ) or 5, 0, 10080 ) * 60
 		local reason = table.concat( args, " ", 3 )
 			if ( #reason == 0 ) then reason = "No reason specified" end
 		local nick = evolve:GetProperty( sid, "Nick" )
 		
-		evolve:Ban( sid, length, reason, ply:UniqueID() )
+		evolve:Ban( sid, length, reason, ply:SteamID() )
 		
 		if ( length == 0 ) then
 			evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " banned ", evolve.colors.red, nick, evolve.colors.white, " permanently (" .. reason .. ")." )
@@ -69,7 +69,7 @@ if ( SERVER ) then
 	function PLUGIN:InitPostEntity()
 		for sid, data in pairs( evolve.PlayerInfo ) do
 			if ( evolve:IsBanned( sid ) ) then
-				game.ConsoleCommand( "banid " .. ( data.BanEnd - os.time() ) / 60 .. " " .. sid .. "\n" )
+				RunConsoleCommand( "banid", ( data.BanEnd - os.time() ) / 60, sid )
 			end
 		end
 	end

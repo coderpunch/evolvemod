@@ -42,6 +42,7 @@ if ( SERVER ) then
 	util.AddNetworkString( "EV_RemoveRank" )
 	util.AddNetworkString( "EV_RankPrivilege" )
 	util.AddNetworkString( "EV_Privilege" )
+	util.AddNetworkString( "EV_BanEntry" )
 	util.AddNetworkString( "EV_Rank" )
 	util.AddNetworkString( "EV_RankPrivileges" )
 	util.AddNetworkString( "EV_Init" )
@@ -615,7 +616,7 @@ hook.Add( "PlayerSpawn", "EV_RankHook", function( ply )
 		ply:SetNWInt( "EV_JoinTime", os.time() )
 		ply:SetNWInt( "EV_PlayTime", ply:GetProperty( "PlayTime" ) or 0 )
 		net.Start( "EV_TimeSync" )
-			net.WriteInt( os.time(), 32 )
+			net.WriteUInt( os.time(), 32 )
 		net.Send( ply )
 	end
 end )
@@ -625,7 +626,7 @@ end )
 -----------------------------------------------------------------------------------------------------------------------]]--
 
 net.Receive( "EV_TimeSync", function( len )
-	evolve.timeoffset = net.ReadInt( 32 ) - os.time()
+	evolve.timeoffset = net.ReadUInt( 32 ) - os.time()
 end )
 
 function evolve:Time()
@@ -664,7 +665,7 @@ function evolve:TransferPrivileges( ply )
 	
 	for id, privilege in ipairs( evolve.privileges ) do
 		net.Start( "EV_Privilege" )
-			net.WriteInt( id, 8 )
+			net.WriteUInt( id, 8 )
 			net.WriteString( privilege )
 		net.Send( ply )
 	end
@@ -681,13 +682,13 @@ function evolve:TransferRank( ply, rank )
 		net.WriteString( data.Icon )
 		net.WriteString( data.UserGroup )
 		net.WriteTable( data.Privileges or {} )
-		net.WriteInt( data.Immunity, 8 )
+		net.WriteUInt( data.Immunity, 8 )
 		
 		if ( color ) then
 			net.WriteBit( true )
-			net.WriteInt( color.r, 8 )
-			net.WriteInt( color.g, 8 )
-			net.WriteInt( color.b, 8 )
+			net.WriteUInt( color.r, 8 )
+			net.WriteUInt( color.g, 8 )
+			net.WriteUInt( color.b, 8 )
 		else
 			net.WriteBit( false )
 		end
@@ -710,11 +711,11 @@ net.Receive( "EV_Rank", function( len )
 		Icon = net.ReadString(),
 		UserGroup = net.ReadString(),
 		Privileges = net.ReadTable(),
-		Immunity = net.ReadInt( 8 ),
+		Immunity = net.ReadUInt( 8 ),
 	}
 	
 	if ( net.ReadBit() ) then
-		evolve.ranks[id].Color = Color( net.ReadInt( 8 ), net.ReadInt( 8 ), net.ReadInt( 8 ) )
+		evolve.ranks[id].Color = Color( net.ReadUInt( 8 ), net.ReadUInt( 8 ), net.ReadUInt( 8 ) )
 	end
 	
 	evolve.ranks[id].IconMaterial = Material( "icon16/" .. evolve.ranks[id].Icon .. ".png" )
@@ -727,7 +728,7 @@ net.Receive( "EV_Rank", function( len )
 end )
 
 net.Receive( "EV_Privilege", function( len )
-	local id = net.ReadInt( 8 )
+	local id = net.ReadUInt( 8 )
 	local name = net.ReadString()
 	
 	evolve.privileges[ id ] = name
@@ -748,7 +749,7 @@ end )
 
 net.Receive( "EV_RankPrivilege", function( len )
 	local rank = net.ReadString()
-	local priv = evolve.privileges[ net.ReadInt( 8 ) ]
+	local priv = evolve.privileges[ net.ReadUInt( 8 ) ]
 	local enabled = net.ReadBit()
 	
 	if ( enabled ) then
@@ -827,7 +828,7 @@ if ( SERVER ) then
 				
 				net.Start( "EV_RankPrivilege" )
 					net.WriteString( rank )
-					net.WriteInt( evolve:KeyByValue( evolve.privileges, privilege ), 8 )
+					net.WriteUInt( evolve:KeyByValue( evolve.privileges, privilege ), 8 )
 					net.WriteBit( tonumber( args[3] ) == 1 )
 				net.Broadcast()
 			elseif ( #args >= 2 and evolve.ranks[ args[1] ] and tonumber( args[2] ) and ( !args[3] or #args[3] == 1 ) ) then
@@ -959,7 +960,7 @@ if ( SERVER ) then
 					net.WriteString( info.Nick )
 					net.WriteString( info.BanReason )
 					net.WriteString( evolve:GetProperty( info.BanAdmin, "Nick" ) )
-					net.WriteInt( t, 32 )
+					net.WriteUInt( t, 32 )
 				net.Send( ply )
 			end
 		end
@@ -981,7 +982,7 @@ if ( SERVER ) then
 			net.WriteString( evolve:GetProperty( sid, "Nick" ) )
 			net.WriteString( reason )
 			net.WriteString( a )
-			net.WriteInt( length, 32 )
+			net.WriteUInt( length, 32 )
 		net.Broadcast()
 		
 		local pl = evolve:GetPlayerBySteamID( sid )
@@ -992,10 +993,10 @@ if ( SERVER ) then
 				pl:Kick( "Banned for " .. length / 60 .. " minutes! (" .. reason .. ")" )
 			end
 		end
-		game.ConsoleCommand( string.format( "banid %f %s kick\n", length / 60, sid ) )
-		game.ConsoleCommand( string.format( "kickid %s\n", sid ) )
+		RunConsoleCommand( "banid", length / 60, sid, "kick" )
+		RunConsoleCommand( "kickid", sid )
 			
-		game.ConsoleCommand( "writeid\n" )
+		RunConsoleCommand( "writeid" )
 	end
 	
 	function evolve:UnBan( sid, adminsid )		
@@ -1006,7 +1007,7 @@ if ( SERVER ) then
 		net.Start("EV_RemoveBanEntry")
 			net.WriteString(sid)
 		net.Broadcast()
-		game.ConsoleCommand( "removeid " .. evolve:GetProperty( sid, "SteamID" ) .. "\n" )
+		RunConsoleCommand( "removeid", sid )
 	end
 	
 	function evolve:IsBanned( sid )
@@ -1030,7 +1031,7 @@ else
 			Admin = net.ReadString()
 		}
 		
-		local t = net.ReadInt( 32 )
+		local t = net.ReadUInt( 32 )
 		if ( t > 0 ) then
 			evolve.bans[steamid].End = t + os.time()
 		else
