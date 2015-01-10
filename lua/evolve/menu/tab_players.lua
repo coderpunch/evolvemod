@@ -13,13 +13,13 @@ TAB.Privileges = { "Player menu" }
 TAB.Width = 260
 
 function TAB:Initialize( pnl )
-	// Create the player list
+	-- Create the player list
 	self.PlayerList = vgui.Create( "EvolvePlayerList", pnl )
 	self.PlayerList:AddColumn("Connected Players")
 	self.PlayerList:SetPos( 0, 0 )
 	self.PlayerList:SetSize( self.Width - 6, pnl:GetParent():GetTall() - 58 )
 	
-	// Create the plugin buttons	
+	-- Create the plugin buttons	
 	self.ButKick = vgui.Create( "EvolveButton", pnl )
 	self.ButKick:SetPos( 0, pnl:GetParent():GetTall() - 58 )
 	self.ButKick:SetSize( 56, 27 )
@@ -71,7 +71,7 @@ function TAB:Initialize( pnl )
 		end
 	end
 	
-	// Create the plugin list
+	-- Create the plugin list
 	self.PluginList = vgui.Create( "EvolvePluginList", pnl )
 	self.PluginList:SetPos( self.Width, 0 )
 	self.PluginList:SetSize( self.Width, pnl:GetParent():GetTall() - 58 )

@@ -113,10 +113,6 @@ end
 	Utility functions
 -----------------------------------------------------------------------------------------------------------------------]]--
 
-function evolve:BoolToInt( bool )
-	if ( bool ) then return 1 else return 0 end
-end
-
 function evolve:GetPlayerBySteamID( steamid )
 	for _, v in pairs( player.GetAll() ) do
 		if ( v:SteamID() == steamid ) then
@@ -124,13 +120,6 @@ function evolve:GetPlayerBySteamID( steamid )
 		end
 	end
 	return nil
-end
-
-function evolve:KeyByValue( tbl, value, iterator )
-	iterator = iterator or pairs
-	for k, v in iterator( tbl ) do
-		if ( value == v ) then return k end
-	end
 end
 
 function evolve:FormatTime( t )
@@ -484,9 +473,9 @@ end
 	Ranks
 -----------------------------------------------------------------------------------------------------------------------]]--
 
-// COMPATIBILITY
+-- COMPATIBILITY
 evolve.compatibilityRanks = util.JSONToTable( file.Read( "ev_ranks.txt", "DATA" ) or "" )
-// COMPATIBILITY
+-- COMPATIBILITY
 
 function _R.Player:EV_HasPrivilege( priv )
 	if ( evolve.ranks[ self:EV_GetRank() ] ) then
@@ -578,7 +567,7 @@ function evolve:Rank( ply )
 		ply:SetNWString( "EV_UserGroup", rank )
 		usergroup = rank
 	else
-		// COMPATIBILITY
+		-- COMPATIBILITY
 		if ( evolve.compatibilityRanks ) then
 			for _, ranks in ipairs( evolve.compatibilityRanks ) do
 				if ( ranks.steamID == ply:SteamID() ) then
@@ -594,7 +583,7 @@ function evolve:Rank( ply )
 				end
 			end
 		end
-		// COMPATIBILITY
+		-- COMPATIBILITY
 	end
 	
 	if ( ply:EV_HasPrivilege( "Ban menu" ) ) then
@@ -665,7 +654,7 @@ function evolve:TransferPrivileges( ply )
 	
 	for id, privilege in ipairs( evolve.privileges ) do
 		net.Start( "EV_Privilege" )
-			net.WriteUInt( id, 8 )
+			net.WriteUInt( id, 16 )
 			net.WriteString( privilege )
 		net.Send( ply )
 	end
@@ -714,7 +703,7 @@ net.Receive( "EV_Rank", function( len )
 		Immunity = net.ReadUInt( 8 ),
 	}
 	
-	if ( net.ReadBit() ) then
+	if ( net.ReadBit() == 1 ) then
 		evolve.ranks[id].Color = Color( net.ReadUInt( 8 ), net.ReadUInt( 8 ), net.ReadUInt( 8 ) )
 	end
 	
@@ -728,9 +717,8 @@ net.Receive( "EV_Rank", function( len )
 end )
 
 net.Receive( "EV_Privilege", function( len )
-	local id = net.ReadUInt( 8 )
+	local id = net.ReadUInt( 16 )
 	local name = net.ReadString()
-	
 	evolve.privileges[ id ] = name
 end )
 
@@ -749,13 +737,12 @@ end )
 
 net.Receive( "EV_RankPrivilege", function( len )
 	local rank = net.ReadString()
-	local priv = evolve.privileges[ net.ReadUInt( 8 ) ]
-	local enabled = net.ReadBit()
-	
+	local priv = evolve.privileges[ net.ReadUInt( 16 ) ]
+	local enabled = net.ReadBit() == 1
 	if ( enabled ) then
 		table.insert( evolve.ranks[ rank ].Privileges, priv )
 	else
-		table.remove( evolve.ranks[ rank ].Privileges, evolve:KeyByValue( evolve.ranks[ rank ].Privileges, priv ) )
+		table.RemoveByValue( evolve.ranks[ rank ].Privileges, priv )
 	end
 	
 	hook.Call( "EV_RankPrivilegeChange", nil, rank, priv, enabled )
@@ -763,7 +750,7 @@ end )
 
 net.Receive( "EV_RankPrivilegeAll", function( len )
 	local rank = net.ReadString()
-	local enabled = net.ReadBit()
+	local enabled = net.ReadBit() == 1
 	local filter = net.ReadString()
 	
 	if ( enabled ) then
@@ -828,7 +815,7 @@ if ( SERVER ) then
 				
 				net.Start( "EV_RankPrivilege" )
 					net.WriteString( rank )
-					net.WriteUInt( evolve:KeyByValue( evolve.privileges, privilege ), 8 )
+					net.WriteUInt( evolve:KeyByValue( evolve.privileges, privilege ), 16 )
 					net.WriteBit( tonumber( args[3] ) == 1 )
 				net.Broadcast()
 			elseif ( #args >= 2 and evolve.ranks[ args[1] ] and tonumber( args[2] ) and ( !args[3] or #args[3] == 1 ) ) then

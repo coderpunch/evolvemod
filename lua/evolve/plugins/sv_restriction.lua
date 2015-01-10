@@ -34,7 +34,7 @@ function PLUGIN:CanTool( ply, tr, class )
 end
 
 function PLUGIN:PlayerSpawn( ply )
-	// Only block picking up when a player spawns, because we still want to make it possible to use !give and allow admins to drop weapons for players!
+	-- Only block picking up when a player spawns, because we still want to make it possible to use !give and allow admins to drop weapons for players!
 	ply.EV_PickupTimeout = CurTime() + 0.5
 end
 
@@ -45,7 +45,7 @@ function PLUGIN:PlayerCanPickupWeapon( ply, wep )
 end
 
 function PLUGIN:Initialize()	
-	// Weapons
+	-- Weapons
 	local weps = {}
 	
 	for _, wep in pairs( weapons.GetList() ) do
@@ -68,7 +68,7 @@ function PLUGIN:Initialize()
 	
 	table.Add( evolve.privileges, weps )
 	
-	// Entities	
+	-- Entities	
 	local entities = {}
 	
 	for class, ent in pairs( scripted_ents.GetList() ) do
@@ -79,7 +79,7 @@ function PLUGIN:Initialize()
 	
 	table.Add( evolve.privileges, entities )
 	
-	// Tools
+	-- Tools
 	local tools = {}
 	
 	if ( GAMEMODE.IsSandboxDerived ) then
@@ -91,7 +91,7 @@ function PLUGIN:Initialize()
 	
 	table.Add( evolve.privileges, tools )
 	
-	// If this is the first time the restriction plugin runs, add all weapon and entity privileges to all ranks so it doesn't break anything
+	-- If this is the first time the restriction plugin runs, add all weapon and entity privileges to all ranks so it doesn't break anything
 	if ( !evolve:GetGlobalVar( "RestrictionSetUp", false ) ) then		
 		for id, rank in pairs( evolve.ranks ) do
 			if ( id != "owner" ) then

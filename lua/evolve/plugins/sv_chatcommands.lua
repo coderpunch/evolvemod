@@ -7,7 +7,7 @@ PLUGIN.Title = "Chat Commands"
 PLUGIN.Description = "Provides chat commands to run plugins."
 PLUGIN.Author = "Overv"
 
-// Thank you http://lua-users.org/lists/lua-l/2009-07/msg00461.html
+-- Thank you http://lua-users.org/lists/lua-l/2009-07/msg00461.html
 function PLUGIN:Levenshtein( s, t )
 	local d, sn, tn = {}, #s, #t
 	local byte, min = string.byte, math.min

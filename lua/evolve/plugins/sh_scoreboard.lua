@@ -94,14 +94,14 @@ function PLUGIN:FormatTime( raw )
 end
 
 function PLUGIN:DrawInfoBar()
-	// Background
+	-- Background
 	surface.SetDrawColor( 192, 218, 160, 255 )
 	surface.DrawRect( self.X + 15, self.Y + 110, self.Width - 30, 28 )
 	
 	surface.SetDrawColor( 168, 206, 116, 255 )
 	surface.DrawOutlinedRect( self.X + 15, self.Y + 110, self.Width - 30, 28 )
 	
-	// Content
+	-- Content
 	local x = self.X + 24
 	draw.SimpleText( "Currently playing ", "EvolveInfoBar", x, self.Y + 128, Color( 0, 0, 0, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 	x = x + self:QuickTextSize( "EvolveInfoBar", "Currently playing " )
@@ -154,7 +154,7 @@ function PLUGIN:DrawUsergroup( playerinfo, usergroup, title, icon, y )
 			draw.SimpleText( pl.Nick, "EvolveScoreboardUser", self.X + 40, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP )
 			draw.SimpleText( pl.Frags, "EvolveScoreboardUser", self.X + self.Width - 184, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 			draw.SimpleText( pl.Deaths, "EvolveScoreboardUser", self.X + self.Width - 144, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
-			draw.SimpleText( pl.Ping, "EvolveScoreboardUser", self.X + self.Width - 50, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
+			draw.SimpleText( pl.Ping, "EvolveScoreboardUser", self.X + self.Width - 43, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 			draw.SimpleText( self:FormatTime( pl.PlayTime ), "EvolveScoreboardUser", self.X + self.Width - 92, y, Color( 39, 39, 39, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP )
 			
 		end
@@ -193,7 +193,7 @@ function PLUGIN:HUDDrawScoreBoard()
 	if ( !self.DrawScoreboard ) then return end
 	if ( !self.Height ) then self.Height = 139 end
 	
-	// Update position
+	-- Update position
 	self.X = ScrW() / 2 - self.Width / 2
 	self.Y = ScrH() / 2 - ( self.Height ) / 2
 	

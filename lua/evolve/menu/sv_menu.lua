@@ -2,13 +2,13 @@
 	Serverside menu framework
 -----------------------------------------------------------------------------------------------------------------------]]--
 
-// Send all tabs to the clients
+-- Send all tabs to the clients
 local tabs,_ = file.Find( "evolve/menu/tab_*.lua", "LUA" )
 for _, tab in ipairs( tabs ) do
 	AddCSLuaFile( tab )
 end
 
-// Register privileges
+-- Register privileges
 table.insert( evolve.privileges, "Menu" )
 
 function evolve:RegisterTab( tab )

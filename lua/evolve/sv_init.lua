@@ -2,7 +2,7 @@
 	Serverside initialization
 -----------------------------------------------------------------------------------------------------------------------]]--
 
-// Show startup message
+-- Show startup message
 print( "\n===========================================" )
 print( " Evolve " ..evolve.version .. " succesfully started serverside." )
 print( "===========================================\n" )

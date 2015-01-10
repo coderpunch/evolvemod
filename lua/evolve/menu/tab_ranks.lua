@@ -9,11 +9,11 @@ TAB.Author = "Overv"
 TAB.Width = 680
 TAB.Privileges = { "Rank menu" }
 
-// This determines if the second privilege list column toggles all privileges on or off
+-- This determines if the second privilege list column toggles all privileges on or off
 TAB.AllToggle = true
 
 function TAB:Initialize( pnl )
-	// Create the rank list
+	-- Create the rank list
 	self.RankList = vgui.Create( "DListView", pnl )
 	self.RankList:SetPos( 0, 0 )
 	self.RankList:SetSize( self.Width/2 - 6, 125 )
@@ -51,7 +51,7 @@ function TAB:Initialize( pnl )
 		self.Usergroup.Selected = evolve.ranks[ self.LastRank ].UserGroup or "unknown"
 	end
 	
-	// Create the privilege filter
+	-- Create the privilege filter
 	self.PrivFilter = vgui.Create( "DComboBox", pnl )
 	self.PrivFilter:SetPos( 0, self.RankList:GetTall() + 84 )
 	self.PrivFilter:SetSize( self.Width/2 - 6, 20 )
@@ -67,14 +67,14 @@ function TAB:Initialize( pnl )
 		self:UpdatePrivileges()
 	end
 	
-	// Create the privilege list
+	-- Create the privilege list
 	self.PrivList = vgui.Create( "DListView", pnl )
 	self.PrivList:SetPos( 0, self.RankList:GetTall() + 84 + 20 + 5 )
 	self.PrivList:SetSize( self.Width/2 - 6, pnl:GetParent():GetTall() - 267 - 20 - 5 )
 	local col = self.PrivList:AddColumn( "Privilege" )
 	col:SetFixedWidth( (self.Width/2) * 0.8 )
 	
-	// Make the privilege enabled column toggle all on/all off
+	-- Make the privilege enabled column toggle all on/all off
 	col = self.PrivList:AddColumn( "" )
 	col.DoClick = function()
 		local filter
@@ -95,7 +95,7 @@ function TAB:Initialize( pnl )
 	self.ColorPickerContainer:SetPos(self.Width/2, 0)
 	self.ColorPickerContainer:SetSize(self.Width/2, pnl:GetParent():GetTall())
 	
-	// Rank color
+	-- Rank color
 	self.ColorPicker = vgui.Create( "DColorMixer", self.ColorPickerContainer )
 	self.ColorPicker:SetPos( 5, 5 )
 	self.ColorPicker:SetSize( self.Width/2 - 6, self.ColorPickerContainer:GetTall() - 10 )
@@ -107,7 +107,7 @@ function TAB:Initialize( pnl )
 	end
 	self.ColorPicker:SetColor( color_white )
 	
-	// Immunity
+	-- Immunity
 	self.Immunity = vgui.Create( "DNumSlider", self.PropertyContainer )
 	self.Immunity:SetPos( 74, 5 )
 	self.Immunity:SetWide( self.Width/2 - 79 - 6 )
@@ -129,7 +129,7 @@ function TAB:Initialize( pnl )
 		end
 	end
 	
-	// User group
+	-- User group
 	self.Usergroup = vgui.Create( "DComboBox", self.PropertyContainer )
 	self.Usergroup:SetPos( 74, 49 )
 	self.Usergroup:SetSize( self.Width/2 - 79 - 6, 20 )
@@ -143,7 +143,7 @@ function TAB:Initialize( pnl )
 		RunConsoleCommand( "ev_setrankp", self.RankList:GetSelected()[1].Rank, self.Immunity:GetValue(), data, color.r, color.g, color.b )
 	end
 	
-	// New button
+	-- New button
 	self.NewButton = vgui.Create( "EvolveButton", pnl )
 	self.NewButton:SetPos( 0, pnl:GetParent():GetTall() - 58 )
 	self.NewButton:SetSize( 60, 22 )
@@ -174,7 +174,7 @@ function TAB:Initialize( pnl )
 		end )
 	end
 	
-	// Remove button
+	-- Remove button
 	self.RemoveButton = vgui.Create( "EvolveButton", pnl )
 	self.RemoveButton:SetPos( self.Width/2 - 60 - 6, pnl:GetParent():GetTall() - 58 )
 	self.RemoveButton:SetSize( 60, 22 )
@@ -190,7 +190,7 @@ function TAB:Initialize( pnl )
 		end
 	end
 	
-	// Rename button
+	-- Rename button
 	self.RenameButton = vgui.Create( "EvolveButton", pnl )
 	self.RenameButton:SetPos( self.Width/2 - 125 - 6, pnl:GetParent():GetTall() - 58 )
 	self.RenameButton:SetSize( 60, 22 )
@@ -245,7 +245,7 @@ function TAB:PrintNameByClass( class )
 		for _, val in ipairs( stools  ) do
 			local _, __, c = string.find( val, "([%w_]*)%.lua" )
 			if ( c == class ) then
-				// Load the tool to find the name
+				-- Load the tool to find the name
 				TOOL = {}
 				include( "../" .. GAMEMODE.Folder .. "/entities/weapons/gmod_tool/stools/" .. val )
 				
@@ -262,7 +262,7 @@ end
 function TAB:UpdatePrivileges()
 	self.PrivList:Clear()
 	for _, privilege in ipairs( evolve.privileges ) do
-		// Get first character to determine what kind of privilege this is.
+		-- Get first character to determine what kind of privilege this is.
 		local prefix = string.Left( privilege, 1 )
 		
 		if ( ( prefix == "@" and self.PrivFilter.Selected == "Weapons" ) or ( prefix == ":" and self.PrivFilter.Selected == "Entities" ) or ( prefix == "#" and self.PrivFilter.Selected == "Tools" ) or ( !string.match( prefix, "[@:#]" ) and ( self.PrivFilter.Selected or "Privileges" ) == "Privileges" ) ) then
@@ -309,7 +309,7 @@ function TAB:UpdatePrivileges()
 end
 
 function TAB:Update()	
-	// Sort ranks by immunity
+	-- Sort ranks by immunity
 	local ranks = {}
 	for id, rank in pairs( evolve.ranks ) do
 		table.insert( ranks, { ID = id, Icon = rank.Icon, Title = rank.Title, Immunity = rank.Immunity } )

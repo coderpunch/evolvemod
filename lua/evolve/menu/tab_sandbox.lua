@@ -122,7 +122,7 @@ function TAB:Initialize( pnl )
 			cvCheckbox:SetValue( GetConVar( cv[1] ):GetInt() > 0 )
 			cvCheckbox.ConVar = cv[1]
 			cvCheckbox.OnChange = function( self, val )
-				RunConsoleCommand( "ev", "convar", cv[1], evolve:BoolToInt( val ) * ( cv[3] or 1 ) )
+				RunConsoleCommand( "ev", "convar", cv[1], ( val and 1 or 0 ) * ( cv[3] or 1 ) )
 			end
 			cvCheckbox.Label:SetDark(true)
 			self.Settings:AddItem( cvCheckbox )
