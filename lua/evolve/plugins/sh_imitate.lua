@@ -10,6 +10,10 @@ PLUGIN.ChatCommand = "im"
 PLUGIN.Usage = "<player> <message>"
 PLUGIN.Privileges = { "Imitate" }
 
+if SERVER then
+	util.AddNetworkString( "EV_Imitate" )
+end
+
 function PLUGIN:Call( ply, args )
 	if ( ply:EV_HasPrivilege( "Imitate" ) ) then	
 		local players = evolve:FindPlayer( args[1] )
@@ -17,11 +21,11 @@ function PLUGIN:Call( ply, args )
 		
 		if ( #players == 1 ) then
 			if ( #msg > 0 ) then
-				umsg.Start( "EV_Imitate" )
-					umsg.Entity( players[1] )
-					umsg.String( msg )
-					umsg.Bool( players[1]:IsBot() or players[1]:Alive() )
-				umsg.End()
+				net.Start( "EV_Imitate" )
+					net.WriteEntity( players[1] )
+					net.WriteString( msg )
+					net.WriteBit( players[1]:IsBot() or players[1]:Alive() )
+				net.Broadcast()
 			else
 				evolve:Notify( ply, evolve.colors.red, "No message specified." )
 			end
@@ -35,9 +39,9 @@ function PLUGIN:Call( ply, args )
 	end
 end
 
-usermessage.Hook( "EV_Imitate", function( um )
-	local ply = um:ReadEntity()
-	hook.Call( "OnPlayerChat", nil, ply, um:ReadString(), false, !um:ReadBool() )
+net.Receive( "EV_Imitate", function( len )
+	local ply = net.ReadEntity()
+	hook.Call( "OnPlayerChat", nil, ply, net.ReadString(), false, net.ReadBit() == 0 )
 end )
 
 evolve:RegisterPlugin( PLUGIN )

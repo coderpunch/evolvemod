@@ -113,6 +113,13 @@ end
 	Utility functions
 -----------------------------------------------------------------------------------------------------------------------]]--
 
+function evolve:KeyByValue( tbl, value, iterator )
+	iterator = iterator or pairs
+	for k, v in iterator( tbl ) do
+		if ( value == v ) then return k end
+	end
+end
+
 function evolve:GetPlayerBySteamID( steamid )
 	for _, v in pairs( player.GetAll() ) do
 		if ( v:SteamID() == steamid ) then

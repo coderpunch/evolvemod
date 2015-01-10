@@ -9,16 +9,20 @@ PLUGIN.Author = "Overv"
 PLUGIN.ChatCommand = "time"
 PLUGIN.Privileges = { "The time" }
 
+if SERVER then
+	util.AddNetworkString( "EV_ShowTime" )
+end
+
 function PLUGIN:Call( ply, args )
 	if ( ply:EV_HasPrivilege( "The time" ) ) then
-		umsg.Start( "EV_ShowTime", ply )
-		umsg.End()
+		net.Start( "EV_ShowTime" )
+		net.Send( ply )
 	else
 		evolve:Notify( ply, evolve.colors.red, evolve.constants.notallowed )
 	end
 end
 
-usermessage.Hook( "EV_ShowTime", function()
+net.Receive( "EV_ShowTime", function( len )
 	evolve:Notify( evolve.colors.white, "It is now ", evolve.colors.blue, os.date( "%H:%M" ), evolve.colors.white, "." )
 end )
 

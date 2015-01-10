@@ -19,7 +19,8 @@ function PLUGIN:GetArguments( str )
 end
 
 function PLUGIN:VoteEnd()
-	SendUserMessage( "EV_VoteEnd", nil )
+	net.Start( "EV_VoteEnd")
+	net.Broadcast()
 	
 	local msg = ""	
 	for i = 1, #self.Options do
@@ -73,13 +74,13 @@ function PLUGIN:Call( ply, _, argstr )
 			self.Votes = {}
 			self.VotingPlayers = 0
 			
-			umsg.Start( "EV_VoteMenu" )
-				umsg.String( self.Question )
-				umsg.Short( #self.Options )
+			net.Start( "EV_VoteMenu" )
+				net.WriteString( self.Question )
+				net.WriteUInt( #self.Options, 8 )
 				for _, option in ipairs( self.Options ) do
-					umsg.String( option )
+					net.WriteString( option )
 				end
-			umsg.End()
+			net.Broadcast()
 			
 			timer.Create( "EV_VoteEnd", 10, 1, function() PLUGIN:VoteEnd() end )
 			
@@ -119,19 +120,21 @@ function PLUGIN:ShowVoteMenu( question, options )
 	end
 end
 
-usermessage.Hook( "EV_VoteMenu", function( um )
-	local question = um:ReadString()
-	local optionc = um:ReadShort()
+net.Receive( "EV_VoteMenu", function( len )
+	local question = net.ReadString()
+	local optionc = net.ReadUInt( 8 )
 	local options = {}
 	
 	for i = 1, optionc do
-		table.insert( options, um:ReadString() )
+		table.insert( options, net.ReadString() )
 	end
 	
 	PLUGIN:ShowVoteMenu( question, options )
 end )
 
 if ( SERVER ) then
+	util.AddNetworkString( "EV_VoteMenu" )
+	util.AddNetworkString( "EV_VoteEnd" )
 	concommand.Add( "EV_DoVote", function( ply, _, args )
 		if ( PLUGIN.Question and !ply.EV_Voted and tonumber( args[1] ) and tonumber( args[1] ) <= #PLUGIN.Options ) then
 			local optionid = tonumber( args[1] )
@@ -153,7 +156,7 @@ if ( SERVER ) then
 	end )
 end
 
-usermessage.Hook( "EV_VoteEnd", function()
+net.Receive( "EV_VoteEnd", function( len )
 	if ( PLUGIN.VoteWindow and PLUGIN.VoteWindow.Close ) then
 		PLUGIN.VoteWindow:Close()
 	end

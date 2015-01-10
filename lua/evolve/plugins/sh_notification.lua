@@ -17,10 +17,10 @@ function PLUGIN:Call( ply, args )
 		local msg = table.concat( args, " " )
 		
 		if ( #msg > 0 ) then
-			umsg.Start( "EV_Notify" )
-				umsg.Short( time )
-				umsg.String( msg )
-			umsg.End()
+			net.Start( "EV_Notify" )
+				net.WriteUInt( time, 8 )
+				net.WriteString( msg )
+			net.Broadcast()
 			
 			for _, pl in ipairs( player.GetAll() ) do
 				if ( pl:EV_IsAdmin() ) then evolve:Notify( pl, evolve.colors.blue, ply:Nick(), evolve.colors.white, " has added a notice." ) end
@@ -33,13 +33,15 @@ function PLUGIN:Call( ply, args )
 end
 
 if ( CLIENT ) then
-	usermessage.Hook( "EV_Notify", function( um )
-		local time = um:ReadShort()
-		local msg = um:ReadString()
+	net.Receive( "EV_Notify", function( len )
+		local time = net.ReadUInt( 8 )
+		local msg = net.ReadString()
 		
 		GAMEMODE:AddNotify( msg, NOTIFY_GENERIC, time )
 		surface.PlaySound( "ambient/water/drip" .. math.random( 1, 4 ) .. ".wav" )
 	end )
+else
+	util.AddNetworkString( "EV_Notify" )
 end
 
 evolve:RegisterPlugin( PLUGIN )

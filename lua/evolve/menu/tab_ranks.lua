@@ -240,20 +240,10 @@ function TAB:PrintNameByClass( class )
 				return ent.t.PrintName or class
 			end
 		end
-
-		local stools,_ = file.Find(GAMEMODE.Folder .. "/entities/weapons/gmod_tool/stools/*.lua", "GAME")
-		for _, val in ipairs( stools  ) do
-			local _, __, c = string.find( val, "([%w_]*)%.lua" )
-			if ( c == class ) then
-				-- Load the tool to find the name
-				TOOL = {}
-				include( "../" .. GAMEMODE.Folder .. "/entities/weapons/gmod_tool/stools/" .. val )
-				
-				local name = TOOL.Name
-				TOOL = nil
-				
-				return name or class
-			end
+		
+		local tool = weapons.Get("gmod_tool").Tool[ class ]
+		if tool then
+			return ((tool.Tab or "") == "Wire" and "(Wire) " or "") .. (tool.Name or class)
 		end
 		return class
 	end
@@ -267,7 +257,7 @@ function TAB:UpdatePrivileges()
 		
 		if ( ( prefix == "@" and self.PrivFilter.Selected == "Weapons" ) or ( prefix == ":" and self.PrivFilter.Selected == "Entities" ) or ( prefix == "#" and self.PrivFilter.Selected == "Tools" ) or ( !string.match( prefix, "[@:#]" ) and ( self.PrivFilter.Selected or "Privileges" ) == "Privileges" ) ) then
 			local line
-			if ( string.match( prefix, "[@:]" ) ) then
+			if ( string.match( prefix, "[@#:]" ) ) then
 				line = self.PrivList:AddLine( self:PrintNameByClass( string.sub( privilege, 2 ) ), "" )
 			else
 				line = self.PrivList:AddLine( privilege, "" )
