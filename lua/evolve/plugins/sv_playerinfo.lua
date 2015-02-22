@@ -9,7 +9,7 @@ PLUGIN.Author = "Overv"
 PLUGIN.ChatCommand = nil
 
 function PLUGIN:ShowPlayerInfo( ply )
-	local first = !ply:GetProperty( "LastJoin" )
+	local first = not ply:GetProperty( "LastJoin" )
 	local lastjoin
 	local lastnick
 	
@@ -19,8 +19,6 @@ function PLUGIN:ShowPlayerInfo( ply )
 		ply:SetProperty( "SteamID", ply:SteamID() )
 		ply:SetProperty( "IPAddress", ply:IPAddress() )
 		ply:SetProperty( "PlayTime", 0 )
-		
-		evolve:CommitProperties()
 	else
 		lastjoin = ply:GetProperty( "LastJoin" )
 		lastnick = ply:GetProperty( "Nick" )
@@ -29,8 +27,7 @@ function PLUGIN:ShowPlayerInfo( ply )
 		ply:SetProperty( "LastJoin", os.time() )
 		ply:SetProperty( "IPAddress", ply:IPAddress() )
 		if ( !ply:GetProperty( "PlayTime" ) ) then ply:SetProperty( "PlayTime", 0 ) end
-		
-		evolve:CommitProperties()
+
 	end
 	
 	local message = { evolve.colors.blue, ply:Nick(), evolve.colors.white }
@@ -74,8 +71,6 @@ end
 function PLUGIN:PlayerDisconnected( ply )
 	ply:SetProperty( "LastJoin", os.time() )
 	ply:SetProperty( "PlayTime", ply:GetProperty( "PlayTime" ) + os.clock() - ply.EV_LastPlaytimeSave )
-	
-	evolve:CommitProperties()
 end
 
 timer.Create( "EV_PlayTimeSave", 60, 0, function()
@@ -85,8 +80,6 @@ timer.Create( "EV_PlayTimeSave", 60, 0, function()
 		
 		ply.EV_LastPlaytimeSave = os.clock()
 	end
-	
-	evolve:CommitProperties()
 end )
 
 evolve:RegisterPlugin( PLUGIN )

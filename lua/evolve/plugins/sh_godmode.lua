@@ -8,10 +8,21 @@ PLUGIN.Description = "Enable godmode for a player."
 PLUGIN.Author = "Overv"
 PLUGIN.ChatCommand = "god"
 PLUGIN.Usage = "[players] [1/0]"
-PLUGIN.Privileges = { "God" }
+PLUGIN.Privileges = { "God", "God (Self)" }
 
 function PLUGIN:Call( ply, args )
-	if ( ply:EV_HasPrivilege( "God" ) ) then
+	if #args == 0 and ply:EV_HasPrivilege( "God (Self)" ) then
+		local enabled = not ply:HasGodMode()
+		
+		if ( enabled ) then 
+			evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " has enabled godmode for ", evolve.colors.red, ply:Nick(), evolve.colors.white, "." )
+			ply:GodEnable()
+		else
+			evolve:Notify( evolve.colors.blue, ply:Nick(), evolve.colors.white, " has disabled godmode for ", evolve.colors.red, ply:Nick(), evolve.colors.white, "." )
+			ply:GodDisable()
+		end
+		ply.EV_GodMode = enabled
+	elseif ply:EV_HasPrivilege( "God" ) then
 		local players = evolve:FindPlayer( args, ply, true )
 		local enabled = ( tonumber( args[ #args ] ) or 1 ) > 0
 		

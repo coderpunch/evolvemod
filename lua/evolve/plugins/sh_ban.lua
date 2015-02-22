@@ -66,11 +66,19 @@ function PLUGIN:Call( ply, args )
 end
 
 if ( SERVER ) then
-	function PLUGIN:InitPostEntity()
-		for sid, data in pairs( evolve.PlayerInfo ) do
-			if ( evolve:IsBanned( sid ) ) then
-				RunConsoleCommand( "banid", ( data.BanEnd - os.time() ) / 60, sid )
-			end
+	function PLUGIN:CheckPassword( steamID64, ipAddress, svPassword, clPassword, name )
+		local sid = util.SteamIDFrom64( steamID64 )
+		if evolve:IsBanned( sid ) then
+			local msg = ""
+			.."BANNED FROM SERVER"
+			.."\n"
+			.."\nTime Remaining:"
+			.."\n    "..evolve:FormatTime( evolve:GetProperty( sid, "BanEnd", 0 ) - os.time() )
+			.."\nBan Reason:"
+			.."\n    "..evolve:GetProperty( sid, "BanReason", "N/A" )
+			.."\nYour SteamID:"
+			.."\n    "..sid
+			return false, msg
 		end
 	end
 end

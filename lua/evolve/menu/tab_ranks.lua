@@ -93,10 +93,12 @@ function TAB:Initialize( pnl )
 	
 	self.ColorPickerContainer = vgui.Create("DPanelList", pnl)
 	self.ColorPickerContainer:SetPos(self.Width/2, 0)
-	self.ColorPickerContainer:SetSize(self.Width/2, pnl:GetParent():GetTall())
+	self.ColorPickerContainer:SetSize(self.Width/2, pnl:GetParent():GetTall()/2 - 40)
 	
 	-- Rank color
 	self.ColorPicker = vgui.Create( "DColorMixer", self.ColorPickerContainer )
+	self.ColorPicker:SetPalette( false )
+	self.ColorPicker:SetAlphaBar( false )
 	self.ColorPicker:SetPos( 5, 5 )
 	self.ColorPicker:SetSize( self.Width/2 - 6, self.ColorPickerContainer:GetTall() - 10 )
 	self.ColorPicker.HSV.OldRelease = self.ColorPicker.HSV.OnMouseReleased

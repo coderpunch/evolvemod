@@ -2,6 +2,7 @@
 	Framework providing the main Evolve functions
 -----------------------------------------------------------------------------------------------------------------------]]--
 
+
 --[[-----------------------------------------------------------------------------------------------------------------------
 	Comfortable constants
 -----------------------------------------------------------------------------------------------------------------------]]--
@@ -47,6 +48,12 @@ if ( SERVER ) then
 	util.AddNetworkString( "EV_RankPrivileges" )
 	util.AddNetworkString( "EV_Init" )
 end
+
+--[[-----------------------------------------------------------------------------------------------------------------------
+	Evolve data folder
+-----------------------------------------------------------------------------------------------------------------------]]--
+
+if not file.Exists( "evolve", "DATA") then file.CreateDir( "evolve" ) end
 
 --[[-----------------------------------------------------------------------------------------------------------------------
 	Messages and notifications
@@ -375,78 +382,35 @@ function _R.Entity:SteamID() if ( !self:IsValid() ) then return 0 end end
 	Player information
 -----------------------------------------------------------------------------------------------------------------------]]--
 
-function evolve:LoadPlayerInfo()
-	if ( file.Exists( "ev_playerinfo.txt", "DATA") ) then
-		debug.sethook()
-		self.PlayerInfo = util.JSONToTable( file.Read( "ev_playerinfo.txt", "DATA" ) )
-	else
-		self.PlayerInfo = {}
-	end
-end
-evolve:LoadPlayerInfo()
-
-function evolve:SavePlayerInfo()
-	file.Write( "ev_playerinfo.txt", util.TableToJSON( self.PlayerInfo ) )
-end
-
-function _R.Player:GetProperty( id, defaultvalue )	
-	if ( evolve.PlayerInfo[ self:SteamID() ] ) then
-		return evolve.PlayerInfo[ self:SteamID() ][ id ] or defaultvalue
-	else
-		return defaultvalue
-	end
-end
-
-function _R.Player:SetProperty( id, value )
-	if ( !evolve.PlayerInfo[ self:SteamID() ] ) then evolve.PlayerInfo[ self:SteamID() ] = {} end
-	
-	evolve.PlayerInfo[ self:SteamID() ][ id ] = value
-end
+if not file.Exists( "evolve/users", "DATA") then file.CreateDir( "evolve/users" ) end
+evolve.UserData = {}
 
 function evolve:GetProperty( steamid, id, defaultvalue )
 	steamid = tostring( steamid )
-	
-	if ( evolve.PlayerInfo[ steamid ] ) then
-		return evolve.PlayerInfo[ steamid ][ id ] or defaultvalue
-	else
-		return defaultvalue
-	end
+	local userdata = evolve:GetUserData( steamid )
+	return userdata[ id ] or defaultvalue
 end
+function _R.Player:GetProperty( id, defaultvalue ) return evolve:GetProperty( self:SteamID(), id, defaultvalue ) end
 
 function evolve:SetProperty( steamid, id, value )
 	steamid = tostring( steamid )
-	if ( !evolve.PlayerInfo[ steamid ] ) then evolve.PlayerInfo[ steamid ] = {} end
+	local userdata = evolve:GetUserData( steamid )
+	userdata[ id ] = value
 	
-	evolve.PlayerInfo[ steamid ][ id ] = value
+	local fl = "evolve/users/"..string.gsub(steamid, ":","_")..".txt"
+	file.Write( fl, dkjson.encode(userdata) ) 
 end
+function _R.Player:SetProperty( id, value ) return evolve:SetProperty( self:SteamID(), id, value ) end
 
-function evolve:CommitProperties()
-	--[[-----------------------------------------------------------------------------------------------------------------------
-		Check if a cleanup would be convenient
-	-----------------------------------------------------------------------------------------------------------------------]]--
-	
-	local count = table.Count( evolve.PlayerInfo )
-	
-	if ( count > 800 ) then
-		local original = count
-		local info = {}
-		for uid, entry in pairs( evolve.PlayerInfo ) do
-			table.insert( info, { UID = uid, LastJoin = entry.LastJoin, Rank = entry.Rank } )
+function evolve:GetUserData( steamid )
+	if not evolve.UserData[ steamid ] then
+		local fl = "evolve/users/"..string.gsub(steamid,":","_")..".txt"
+		if not file.Exists( fl, "DATA" ) then
+			file.Write( fl, dkjson.encode({}) )
 		end
-		table.SortByMember( info, "LastJoin", function(a, b) return a > b end )
-		
-		for _, entry in pairs( info ) do
-			if ( ( !entry.BanEnd or entry.BanEnd < os.time() ) and ( !entry.Rank or entry.Rank == "guest" ) ) then
-				evolve.PlayerInfo[ entry.UID ] = nil
-				count = count - 1
-				if ( count < 800 ) then break end
-			end
-		end
-		
-		evolve:Message( "Cleaned up " .. original - count .. " players." )
+		evolve.UserData[ steamid ] = dkjson.decode( file.Read( fl, "DATA" ) )
 	end
-	
-	evolve:SavePlayerInfo()
+	return evolve.UserData[ steamid ]
 end
 
 --[[-----------------------------------------------------------------------------------------------------------------------
@@ -479,10 +443,6 @@ end
 --[[-----------------------------------------------------------------------------------------------------------------------
 	Ranks
 -----------------------------------------------------------------------------------------------------------------------]]--
-
--- COMPATIBILITY
-evolve.compatibilityRanks = util.JSONToTable( file.Read( "ev_ranks.txt", "DATA" ) or "" )
--- COMPATIBILITY
 
 function _R.Player:EV_HasPrivilege( priv )
 	if ( evolve.ranks[ self:EV_GetRank() ] ) then
@@ -518,7 +478,6 @@ end
 
 function _R.Player:EV_SetRank( rank )
 	self:SetProperty( "Rank", rank )
-	evolve:CommitProperties()
 	
 	self:SetNWString( "EV_UserGroup", rank )
 	
@@ -573,24 +532,6 @@ function evolve:Rank( ply )
 	if ( rank and evolve.ranks[ rank ] ) then
 		ply:SetNWString( "EV_UserGroup", rank )
 		usergroup = rank
-	else
-		-- COMPATIBILITY
-		if ( evolve.compatibilityRanks ) then
-			for _, ranks in ipairs( evolve.compatibilityRanks ) do
-				if ( ranks.steamID == ply:SteamID() ) then
-					rank = ranks.rank
-					
-					ply:SetNWString( "EV_UserGroup", rank )
-					usergroup = rank
-					
-					ply:SetProperty( "Rank", rank )
-					evolve:CommitProperties()
-					
-					break
-				end
-			end
-		end
-		-- COMPATIBILITY
 	end
 	
 	if ( ply:EV_HasPrivilege( "Ban menu" ) ) then
@@ -620,11 +561,11 @@ end )
 --[[-----------------------------------------------------------------------------------------------------------------------
 	Time synchronisation
 -----------------------------------------------------------------------------------------------------------------------]]--
-
-net.Receive( "EV_TimeSync", function( len )
-	evolve.timeoffset = net.ReadUInt( 32 ) - os.time()
-end )
-
+if CLIENT then
+	net.Receive( "EV_TimeSync", function( len )
+		evolve.timeoffset = net.ReadUInt( 32 ) - os.time()
+	end )
+end
 function evolve:Time()
 	if ( CLIENT ) then
 		return os.time() + ( evolve.timeoffset or 0 )
@@ -638,12 +579,12 @@ end
 -----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:SaveRanks()
-	file.Write( "ev_userranks.txt", util.TableToJSON( evolve.ranks ) )
+	file.Write( "evolve/userranks.txt", dkjson.encode( evolve.ranks ) )
 end
 
 function evolve:LoadRanks()
-	if ( file.Exists( "ev_userranks.txt", "DATA" ) ) then
-		evolve.ranks = util.JSONToTable( file.Read( "ev_userranks.txt", "DATA" ) )
+	if ( file.Exists( "evolve/userranks.txt", "DATA" ) ) then
+		evolve.ranks = dkjson.decode( file.Read( "evolve/userranks.txt", "DATA" ) )
 	else
 		include( "evolve/defaultranks.lua" )
 		evolve:SaveRanks()
@@ -696,91 +637,92 @@ function evolve:TransferRanks( ply )
 		evolve:TransferRank( ply, id )
 	end
 end
-
-net.Receive( "EV_Rank", function( len )
-	local id = string.lower( net.ReadString() )
-	local title = net.ReadString()
-	local created = evolve.ranks[id] == nil
-	
-	evolve.ranks[id] = {
-		Title = title,
-		Icon = net.ReadString(),
-		UserGroup = net.ReadString(),
-		Privileges = net.ReadTable(),
-		Immunity = net.ReadUInt( 8 ),
-	}
-	
-	if ( net.ReadBit() == 1 ) then
-		evolve.ranks[id].Color = Color( net.ReadUInt( 8 ), net.ReadUInt( 8 ), net.ReadUInt( 8 ) )
-	end
-	
-	evolve.ranks[id].IconMaterial = Material( "icon16/" .. evolve.ranks[id].Icon .. ".png" )
-	
-	if ( created ) then
-		hook.Call( "EV_RankCreated", nil, id )
-	else
-		hook.Call( "EV_RankUpdated", nil, id )
-	end
-end )
-
-net.Receive( "EV_Privilege", function( len )
-	local id = net.ReadUInt( 16 )
-	local name = net.ReadString()
-	evolve.privileges[ id ] = name
-end )
-
-net.Receive( "EV_RemoveRank", function( len )
-	local rank = net.ReadString()
-	hook.Call( "EV_RankRemoved", nil, rank )
-	evolve.ranks[ rank ] = nil
-end )
-
-net.Receive( "EV_RenameRank", function( len )
-	local rank = net.ReadString():lower()
-	evolve.ranks[ rank ].Title = net.ReadString()
-	
-	hook.Call( "EV_RankRenamed", nil, rank, evolve.ranks[ rank ].Title )
-end )
-
-net.Receive( "EV_RankPrivilege", function( len )
-	local rank = net.ReadString()
-	local priv = evolve.privileges[ net.ReadUInt( 16 ) ]
-	local enabled = net.ReadBit() == 1
-	if ( enabled ) then
-		table.insert( evolve.ranks[ rank ].Privileges, priv )
-	else
-		table.RemoveByValue( evolve.ranks[ rank ].Privileges, priv )
-	end
-	
-	hook.Call( "EV_RankPrivilegeChange", nil, rank, priv, enabled )
-end )
-
-net.Receive( "EV_RankPrivilegeAll", function( len )
-	local rank = net.ReadString()
-	local enabled = net.ReadBit() == 1
-	local filter = net.ReadString()
-	
-	if ( enabled ) then
-		for _, priv in ipairs( evolve.privileges ) do
-			if ( ( ( #filter == 0 and !string.match( priv, "[@:#]" ) ) or string.Left( priv, 1 ) == filter ) and !table.HasValue( evolve.ranks[rank].Privileges, priv ) ) then				
-				hook.Call( "EV_RankPrivilegeChange", nil, rank, priv, true )
-				table.insert( evolve.ranks[ rank ].Privileges, priv )
-			end
-		end
-	else
-		local i = 1
+if CLIENT then
+	net.Receive( "EV_Rank", function( len )
+		local id = string.lower( net.ReadString() )
+		local title = net.ReadString()
+		local created = evolve.ranks[id] == nil
 		
-		while ( i <= #evolve.ranks[rank].Privileges ) do
-			if ( ( #filter == 0 and !string.match( evolve.ranks[rank].Privileges[i], "[@:#]" ) ) or string.Left( evolve.ranks[rank].Privileges[i], 1 ) == filter ) then
-				hook.Call( "EV_RankPrivilegeChange", nil, rank, evolve.ranks[rank].Privileges[i], false )
-				table.remove( evolve.ranks[rank].Privileges, i )
-			else
-				i = i + 1
+		evolve.ranks[id] = {
+			Title = title,
+			Icon = net.ReadString(),
+			UserGroup = net.ReadString(),
+			Privileges = net.ReadTable(),
+			Immunity = net.ReadUInt( 8 ),
+		}
+		
+		if ( net.ReadBit() == 1 ) then
+			evolve.ranks[id].Color = Color( net.ReadUInt( 8 ), net.ReadUInt( 8 ), net.ReadUInt( 8 ) )
+		end
+		
+		evolve.ranks[id].IconMaterial = Material( "icon16/" .. evolve.ranks[id].Icon .. ".png" )
+		
+		if ( created ) then
+			hook.Call( "EV_RankCreated", nil, id )
+		else
+			hook.Call( "EV_RankUpdated", nil, id )
+		end
+	end )
+
+	net.Receive( "EV_Privilege", function( len )
+		local id = net.ReadUInt( 16 )
+		local name = net.ReadString()
+		evolve.privileges[ id ] = name
+	end )
+
+	net.Receive( "EV_RemoveRank", function( len )
+		local rank = net.ReadString()
+		if rank == "user" or rank == "admin" or rank == "superadmin" then return end
+		hook.Call( "EV_RankRemoved", nil, rank )
+		evolve.ranks[ rank ] = nil
+	end )
+
+	net.Receive( "EV_RenameRank", function( len )
+		local rank = net.ReadString():lower()
+		evolve.ranks[ rank ].Title = net.ReadString()
+		
+		hook.Call( "EV_RankRenamed", nil, rank, evolve.ranks[ rank ].Title )
+	end )
+
+	net.Receive( "EV_RankPrivilege", function( len )
+		local rank = net.ReadString()
+		local priv = evolve.privileges[ net.ReadUInt( 16 ) ]
+		local enabled = net.ReadBit() == 1
+		if ( enabled ) then
+			table.insert( evolve.ranks[ rank ].Privileges, priv )
+		else
+			table.RemoveByValue( evolve.ranks[ rank ].Privileges, priv )
+		end
+		
+		hook.Call( "EV_RankPrivilegeChange", nil, rank, priv, enabled )
+	end )
+
+	net.Receive( "EV_RankPrivilegeAll", function( len )
+		local rank = net.ReadString()
+		local enabled = net.ReadBit() == 1
+		local filter = net.ReadString()
+		
+		if ( enabled ) then
+			for _, priv in ipairs( evolve.privileges ) do
+				if ( ( ( #filter == 0 and !string.match( priv, "[@:#]" ) ) or string.Left( priv, 1 ) == filter ) and !table.HasValue( evolve.ranks[rank].Privileges, priv ) ) then				
+					hook.Call( "EV_RankPrivilegeChange", nil, rank, priv, true )
+					table.insert( evolve.ranks[ rank ].Privileges, priv )
+				end
+			end
+		else
+			local i = 1
+			
+			while ( i <= #evolve.ranks[rank].Privileges ) do
+				if ( ( #filter == 0 and !string.match( evolve.ranks[rank].Privileges[i], "[@:#]" ) ) or string.Left( evolve.ranks[rank].Privileges[i], 1 ) == filter ) then
+					hook.Call( "EV_RankPrivilegeChange", nil, rank, evolve.ranks[rank].Privileges[i], false )
+					table.remove( evolve.ranks[rank].Privileges, i )
+				else
+					i = i + 1
+				end
 			end
 		end
-	end
-end )
-
+	end )
+end
 --[[-----------------------------------------------------------------------------------------------------------------------
 	Rank modification
 -----------------------------------------------------------------------------------------------------------------------]]--
@@ -945,6 +887,7 @@ end
 
 if ( SERVER ) then
 	function evolve:SyncBans( ply )
+		if true then return end
 		for steamid, info in pairs( evolve.PlayerInfo ) do
 			if ( info.BanEnd and ( info.BanEnd > os.time() or info.BanEnd == 0 ) ) then
 				local t = info.BanEnd - os.time()
@@ -966,7 +909,6 @@ if ( SERVER ) then
 		evolve:SetProperty( sid, "BanEnd", os.time() + length )
 		evolve:SetProperty( sid, "BanReason", reason )
 		evolve:SetProperty( sid, "BanAdmin", adminsid )
-		evolve:CommitProperties()
 		
 		local a = "Console"
 		local admin = evolve:GetPlayerBySteamID( adminsid )
@@ -987,21 +929,15 @@ if ( SERVER ) then
 				pl:Kick( "Banned for " .. length / 60 .. " minutes! (" .. reason .. ")" )
 			end
 		end
-		RunConsoleCommand( "banid", length / 60, sid, "kick" )
-		RunConsoleCommand( "kickid", sid )
-			
-		RunConsoleCommand( "writeid" )
 	end
 	
 	function evolve:UnBan( sid, adminsid )		
 		evolve:SetProperty( sid, "BanEnd", nil )
 		evolve:SetProperty( sid, "BanReason", nil )
 		evolve:SetProperty( sid, "BanAdmin", nil )
-		evolve:CommitProperties()
 		net.Start("EV_RemoveBanEntry")
 			net.WriteString(sid)
 		net.Broadcast()
-		RunConsoleCommand( "removeid", sid )
 	end
 	
 	function evolve:IsBanned( sid )
@@ -1043,18 +979,17 @@ else
 		evolve.bans[steamid] = nil
 	end )
 end
-
 --[[-----------------------------------------------------------------------------------------------------------------------
 	Global data system
 -----------------------------------------------------------------------------------------------------------------------]]--
 
 function evolve:SaveGlobalVars()
-	file.Write( "ev_globalvars.txt", util.TableToJSON( evolve.globalvars ) )
+	file.Write( "evolve/globalvars.txt", dkjson.encode( evolve.globalvars ) )
 end
 
 function evolve:LoadGlobalVars()
-	if ( file.Exists( "ev_globalvars.txt", "DATA" ) ) then
-		evolve.globalvars = util.JSONToTable( file.Read( "ev_globalvars.txt", "DATA" ) )
+	if ( file.Exists( "evolve/globalvars.txt", "DATA" ) ) then
+		evolve.globalvars = dkjson.decode( file.Read( "evolve/globalvars.txt", "DATA" ) )
 	else
 		evolve.globalvars = {}
 		evolve:SaveGlobalVars()
@@ -1075,17 +1010,18 @@ end
 	Log system
 -----------------------------------------------------------------------------------------------------------------------]]--
 
+if not file.Exists( "evolve/logs", "DATA") then file.CreateDir( "evolve/logs" ) end
 function evolve:Log( str )
 	if ( CLIENT ) then return end
 	
-	local logFile = "ev_logs/" .. os.date( "%d-%m-%Y" ) .. ".txt"
-	local files = file.Find( "ev_logs/" .. os.date( "%d-%m-%Y" ) .. "*.txt", "DATA" )
+	local logFile = "evolve/logs/" .. os.date( "%d-%m-%Y" ) .. ".txt"
+	local files = file.Find( "evolve/logs/" .. os.date( "%d-%m-%Y" ) .. "*.txt", "DATA" )
 	table.sort( files )
-	if ( #files > 0 ) then logFile = "ev_logs/" .. files[math.max(#files-1,1)] end
+	if ( #files > 0 ) then logFile = "evolve/logs/" .. files[math.max(#files-1,1)] end
 	
 	local src = file.Read( logFile ) or ""
 	if ( #src > 200 * 1024 ) then
-		logFile = "ev_logs/" .. os.date( "%d-%m-%Y" ) .. " (" .. #files + 1 .. ").txt"
+		logFile = "evolve/logs/" .. os.date( "%d-%m-%Y" ) .. " (" .. #files + 1 .. ").txt"
 	end
 	
 	file.Append( logFile, "[" .. os.date() .. "] " .. str .. "\n" )

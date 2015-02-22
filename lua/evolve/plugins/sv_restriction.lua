@@ -9,7 +9,7 @@ PLUGIN.Author = "Overv"
 
 function PLUGIN:PlayerSpawnSWEP( ply, name, tbl )
 	if ( GAMEMODE.IsSandboxDerived and table.HasValue( evolve.privileges, "@" .. name ) and !ply:EV_HasPrivilege( "@" .. name ) ) then
-		evolve:Notify( ply, evolve.colors.red, "You are not allowed to spawn this weapon!" )
+		evolve:Notify( ply, evolve.colors.red, "You are not allowed to spawn '"..name.."' weapon!" )
 		return false
 	end
 end
@@ -21,14 +21,14 @@ end
 
 function PLUGIN:PlayerSpawnSENT( ply, class )
 	if ( GAMEMODE.IsSandboxDerived and table.HasValue( evolve.privileges, ":" .. class ) and !ply:EV_HasPrivilege( ":" .. class ) ) then
-		evolve:Notify( ply, evolve.colors.red, "You are not allowed to spawn this entity!" )
+		evolve:Notify( ply, evolve.colors.red, "You are not allowed to spawn '"..class.."' entity!" )
 		return false
 	end
 end
 
 function PLUGIN:CanTool( ply, tr, class )
 	if ( GAMEMODE.IsSandboxDerived and table.HasValue( evolve.privileges, "#" .. class ) and !ply:EV_HasPrivilege( "#" .. class ) ) then
-		evolve:Notify( ply, evolve.colors.red, "You are not allowed to use this tool!" )
+		evolve:Notify( ply, evolve.colors.red, "You are not allowed to use '"..class.."' tool!" )
 		return false
 	end
 end

@@ -5,8 +5,11 @@
 -- Set up Evolve table
 evolve = {}
 
+require("dkjson")
+
 if SERVER then
 	-- Distribute clientside and shared files
+	AddCSLuaFile("includes/modules/dkjson.lua")
 	AddCSLuaFile( "autorun/ev_autorun.lua" )
 	AddCSLuaFile( "evolve/version.lua" )
 	AddCSLuaFile( "evolve/framework.lua" )
