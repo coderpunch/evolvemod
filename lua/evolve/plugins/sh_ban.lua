@@ -19,13 +19,11 @@ function PLUGIN:Call( ply, args )
 			Get the Steam ID to ban
 		-----------------------------------------------------------------------------------------------------------------------]]--
 		
-		local sid, pl
-		
+		local sid
 		if ( string.match( args[1] or "", "STEAM_[0-5]:[0-9]:[0-9]+" ) ) then 
-			pl = evolve:GetPlayerBySteamID( sid )
+			sid = args[1]
 		else
-			pl = evolve:FindPlayer( args[1] )
-			
+			local pl = evolve:FindPlayer( args[1] )
 			if ( #pl > 1 ) then
 				evolve:Notify( ply, evolve.colors.white, "Did you mean ", evolve.colors.red, evolve:CreatePlayerList( pl, true ), evolve.colors.white, "?" )
 				return
@@ -51,7 +49,7 @@ function PLUGIN:Call( ply, args )
 		local length = math.Clamp( tonumber( args[2] ) or 5, 0, 10080 ) * 60
 		local reason = table.concat( args, " ", 3 )
 			if ( #reason == 0 ) then reason = "No reason specified" end
-		local nick = evolve:GetProperty( sid, "Nick" )
+		local nick = evolve:GetProperty( sid, "Nick", sid )
 		
 		evolve:Ban( sid, length, reason, ply:SteamID() )
 		
@@ -73,9 +71,9 @@ if ( SERVER ) then
 			.."BANNED FROM SERVER"
 			.."\n"
 			.."\nTime Remaining:"
-			.."\n    "..evolve:FormatTime( evolve:GetProperty( sid, "BanEnd", 0 ) - os.time() )
+			.."\n    "..evolve:FormatTime( (evolve.bans[sid]["BanEnd"] or 0) - os.time() )
 			.."\nBan Reason:"
-			.."\n    "..evolve:GetProperty( sid, "BanReason", "N/A" )
+			.."\n    "..(evolve.bans[sid]["BanReason"] or "N/A")
 			.."\nYour SteamID:"
 			.."\n    "..sid
 			return false, msg

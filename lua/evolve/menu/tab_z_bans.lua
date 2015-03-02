@@ -14,11 +14,11 @@ function TAB:Initialize( pnl )
 	self.BanList = vgui.Create( "DListView", pnl )
 	self.BanList:SetSize( self.Width, pnl:GetParent():GetTall() - 58 )
 	self.BanList:SetMultiSelect( false )
-	self.BanList:AddColumn( "Name" ):SetFixedWidth( 100 )
-	self.BanList:AddColumn( "SteamID" ):SetFixedWidth( 125 )
-	self.BanList:AddColumn( "Reason" ):SetFixedWidth( 150 )
-	self.BanList:AddColumn( "Time left" ):SetFixedWidth( 75 )
-	self.BanList:AddColumn( "Banned by" ):SetFixedWidth( 70 )
+	self.BanList:AddColumn( "Name" ):SetWidth( 100 )
+	self.BanList:AddColumn( "SteamID" ):SetWidth( 125 )
+	self.BanList:AddColumn( "Reason" ):SetWidth( 150 )
+	self.BanList:AddColumn( "Time left" ):SetWidth( 75 )
+	self.BanList:AddColumn( "Banned by" ):SetWidth( 70 )
 	
 	self.ButUnban = vgui.Create( "EvolveButton", pnl )
 	self.ButUnban:SetSize( 80, 22 )
@@ -66,12 +66,12 @@ function TAB:EV_BanAdded( id )
 			line:SetColumnText( 1, entry.Nick )
 			line:SetColumnText( 3, entry.Reason )
 			line:SetColumnText( 4, evolve:FormatTime( entry.End - os.time() ) )
-			line:SetColumnText( 5, entry.Admin )
+			line:SetColumnText( 5, entry.Admin.." ("..entry.AdminNick..")")
 			return
 		end
 	end
 	
-	local line = self.BanList:AddLine( entry.Nick, entry.SteamID, entry.Reason, evolve:FormatTime( entry.End - os.time() ), entry.Admin )
+	local line = self.BanList:AddLine( entry.Nick, entry.SteamID, entry.Reason, evolve:FormatTime( entry.End - os.time() ), entry.Admin.." ("..entry.AdminNick..")"  )
 	line.OnRightClick = lineRightClick
 end
 

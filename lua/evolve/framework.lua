@@ -370,13 +370,13 @@ end
 	Console
 -----------------------------------------------------------------------------------------------------------------------]]--
 
-function _R.Entity:Nick() if ( !self:IsValid() ) then return "Console" end end
-function _R.Entity:EV_IsRespected() if ( !self:IsValid() ) then return true end end
-function _R.Entity:EV_IsAdmin() if ( !self:IsValid() ) then return true end end
-function _R.Entity:EV_IsSuperAdmin() if ( !self:IsValid() ) then return true end end
-function _R.Entity:EV_IsOwner() if ( !self:IsValid() ) then return true end end
-function _R.Entity:EV_GetRank() if ( !self:IsValid() ) then return "owner" end end
-function _R.Entity:SteamID() if ( !self:IsValid() ) then return 0 end end
+function _R.Entity:Nick() if not self:IsValid() then return "Console" end end
+function _R.Entity:EV_IsRespected() if not self:IsValid() then return true end end
+function _R.Entity:EV_IsAdmin() if not self:IsValid() then return true end end
+function _R.Entity:EV_IsSuperAdmin() if not self:IsValid() then return true end end
+function _R.Entity:EV_IsOwner() if not self:IsValid() then return true end end
+function _R.Entity:EV_GetRank() if not self:IsValid() then return "owner" end end
+function _R.Entity:SteamID() if not self:IsValid() then return 0 end end
 
 --[[-----------------------------------------------------------------------------------------------------------------------
 	Player information
@@ -884,19 +884,31 @@ end
 --[[-----------------------------------------------------------------------------------------------------------------------
 	Banning
 -----------------------------------------------------------------------------------------------------------------------]]--
-
 if ( SERVER ) then
+	function evolve:SaveBans()
+		file.Write( "evolve/bans.txt", dkjson.encode( evolve.bans ) )
+	end
+
+	function evolve:LoadBans()
+		if ( file.Exists( "evolve/bans.txt", "DATA" ) ) then
+			evolve.bans = dkjson.decode( file.Read( "evolve/bans.txt", "DATA" ) )
+		else
+			evolve:SaveBans()
+		end
+	end
+	
+	evolve:LoadBans() 
 	function evolve:SyncBans( ply )
-		if true then return end
-		for steamid, info in pairs( evolve.PlayerInfo ) do
+		for steamid, info in pairs( evolve.bans ) do
 			if ( info.BanEnd and ( info.BanEnd > os.time() or info.BanEnd == 0 ) ) then
 				local t = info.BanEnd - os.time()
 				if ( info.BanEnd == 0 ) then t = 0 end
 				net.Start( "EV_BanEntry" )
 					net.WriteString( steamid )
-					net.WriteString( info.Nick )
-					net.WriteString( info.BanReason )
-					net.WriteString( evolve:GetProperty( info.BanAdmin, "Nick" ) )
+					net.WriteString( info.Nick or "unnamed" )
+					net.WriteString( info.BanReason or "" )
+					net.WriteString( info.BanAdmin or "Console")
+					net.WriteString( info.BanAdminNick or "")
 					net.WriteUInt( t, 32 )
 				net.Send( ply )
 			end
@@ -905,19 +917,18 @@ if ( SERVER ) then
 	
 	function evolve:Ban( sid, length, reason, adminsid )		
 		if ( length == 0 ) then length = -os.time() end
+		evolve.bans[sid] = {}
+		evolve.bans[sid]["BanEnd"] = os.time() + length
+		evolve.bans[sid]["BanReason"] = reason
+		evolve.bans[sid]["BanAdmin"] = adminsid
+		evolve.bans[sid]["BanAdminNick"] = evolve:GetProperty( adminsid, "Nick", "Console" )
 		
-		evolve:SetProperty( sid, "BanEnd", os.time() + length )
-		evolve:SetProperty( sid, "BanReason", reason )
-		evolve:SetProperty( sid, "BanAdmin", adminsid )
-		
-		local a = "Console"
-		local admin = evolve:GetPlayerBySteamID( adminsid )
-		if ( IsValid( admin ) ) then a = admin:Nick() end
 		net.Start( "EV_BanEntry" )
 			net.WriteString( sid )
-			net.WriteString( evolve:GetProperty( sid, "Nick" ) )
+			net.WriteString( evolve:GetProperty( sid, "Nick", "unnamed" ) )
 			net.WriteString( reason )
-			net.WriteString( a )
+			net.WriteString( adminsid )
+			net.WriteString( evolve:GetProperty( adminsid, "Nick", "Console" ) )
 			net.WriteUInt( length, 32 )
 		net.Broadcast()
 		
@@ -929,19 +940,22 @@ if ( SERVER ) then
 				pl:Kick( "Banned for " .. length / 60 .. " minutes! (" .. reason .. ")" )
 			end
 		end
+		
+		evolve:SaveBans()
 	end
 	
-	function evolve:UnBan( sid, adminsid )		
-		evolve:SetProperty( sid, "BanEnd", nil )
-		evolve:SetProperty( sid, "BanReason", nil )
-		evolve:SetProperty( sid, "BanAdmin", nil )
+	function evolve:UnBan( sid, adminsid )	
+		evolve.bans[sid] = nil
+		
 		net.Start("EV_RemoveBanEntry")
 			net.WriteString(sid)
 		net.Broadcast()
+		
+		evolve:SaveBans()
 	end
 	
 	function evolve:IsBanned( sid )
-		local banEnd = evolve:GetProperty( sid, "BanEnd" )
+		local banEnd = evolve.bans[sid] and evolve.bans[sid]["BanEnd"]
 		
 		if ( banEnd and banEnd > 0 and os.time() > banEnd ) then
 			evolve:UnBan( sid )
@@ -952,13 +966,15 @@ if ( SERVER ) then
 	end
 else
 	net.Receive( "EV_BanEntry", function( len )
-		if ( !evolve.bans ) then evolve.bans = {} end
+		if not evolve.bans then evolve.bans = {} end
 		
 		local steamid = net.ReadString()
 		evolve.bans[steamid] =  {
+			SteamID = steamid,
 			Nick = net.ReadString(),
 			Reason = net.ReadString(),
-			Admin = net.ReadString()
+			Admin = net.ReadString(),
+			AdminNick = net.ReadString()
 		}
 		
 		local t = net.ReadUInt( 32 )
@@ -972,7 +988,7 @@ else
 	end )
 	
 	net.Receive( "EV_RemoveBanEntry", function( len )
-		if ( !evolve.bans ) then return end
+		if not evolve.bans then return end
 		
 		local steamid = net.ReadString()
 		hook.Call( "EV_BanRemoved", nil, steamid )

@@ -64,12 +64,35 @@ function PLUGIN:Initialize()
 		"@weapon_rpg",
 		"@weapon_ar2",
 		"@weapon_physgun",
+		"@weapon_slam",
+		"@weapon_bugbait",
+		"@weapon_stunstick",
 	} )
 	
 	table.Add( evolve.privileges, weps )
 	
 	-- Entities	
-	local entities = {}
+	local entities = {
+		":item_ammo_357",
+		":item_ammo_ar2",
+		":item_ammo_ar2_altfire",
+		":combine_mine",
+		":item_ammo_crossbow",
+		":item_ammo_pistol",
+		":grenade_helicopter",
+		":item_healthvial",
+		":item_healthkit",
+		":item_healthcharger",
+		":item_rpg_round",
+		":item_box_buckshot",
+		":item_ammo_smg1",
+		":item_ammo_smg1_grenade",
+		":item_suit",
+		":npc_grenade_frag",
+		":prop_thumper",
+		":item_suitcharger",
+		":item_battery",
+	}
 	
 	for class, ent in pairs( scripted_ents.GetList() ) do
 		if ( ent.t.Spawnable or ent.t.AdminSpawnable ) then
